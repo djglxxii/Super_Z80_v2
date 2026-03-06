@@ -28,7 +28,7 @@ Documented that all additional dependencies must be justified and recorded in th
 - `git diff` confirmed documentation-only changes and no code/build/tooling modifications.
 
 ## Commit Hash
-Pending commit creation at report draft time. Final hash is recorded in task execution output.
+25d4818
 
 ## Confirmation
 Dependency policy is now part of repository truth. Third-party libraries are explicitly permitted when justified, with Z80ex and SDL2 recorded as expected dependencies.
