@@ -37,7 +37,7 @@ The API computes standard reflected CRC32 (polynomial `0xEDB88320`) for a byte r
 - `ctest --test-dir build --output-on-failure` passed (`1/1` tests passed).
 
 ## Commit Hash
-Recorded after commit creation.
+bb8bcc1
 
 ## Confirmation
 The repository now contains the first reusable deterministic verification utility (CRC32) and the first unit test executable foundation for future milestones.
