@@ -30,7 +30,7 @@ Implemented the first executable emulator skeleton with a minimal CMake build sy
 - `./build/super_z80 --help` output contains `Super_Z80_v2 Emulator` and usage/help text.
 
 ## Commit Hash
-Recorded after commit creation.
+1dea91e
 
 ## Confirmation
 The emulator skeleton now builds successfully and provides the first runnable binary milestone.
