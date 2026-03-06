@@ -55,6 +55,7 @@ Created files:
 - Bootstrap structure created as required.
 - `make verify-bootstrap` passes.
 - Git repository initialized on `main` and bootstrap committed.
+- Bootstrap commit hash: `b36519e`.
 
 ## Issues Encountered
 None.
