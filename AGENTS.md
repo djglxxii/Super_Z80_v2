@@ -35,6 +35,12 @@ Chat history is not authoritative.
 ## Dependency Rules
 - Do not add dependencies without explicit approval.
 - Prefer vendored or already-approved dependencies.
+- Third-party libraries may be used when justified for correctness and reliability.
+- Do not reinvent solved problems in complex subsystems.
+- Z80 CPU emulation should use Z80ex unless a decision record states otherwise.
+- Platform shell functionality is expected to use SDL2.
+- Any additional dependency must be justified and logged in docs/decisions.md.
+- Avoid unnecessary dependency growth.
 - Keep the build surface minimal.
 
 ## Reporting Rules

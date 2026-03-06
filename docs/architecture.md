@@ -10,4 +10,15 @@ Deterministic headless verification is a first-class requirement and must be pre
 
 Initial subsystem candidates include memory, CPU, VDP, DMA, audio, input, trace, and an emulator coordinator.
 
+## Library Strategy
+The emulator will integrate established third-party components when they reduce risk or avoid reimplementing mature solutions.
+
+CPU emulation is expected to rely on Z80ex.
+
+The platform shell layer will likely use SDL2 for windowing, input, and audio.
+
+The emulator core remains modular and independent of UI layers.
+
+Dependency use must remain minimal and purposeful, with each dependency decision recorded in the decision log.
+
 This baseline captures current intent only and will be refined through implementation milestones.

@@ -26,3 +26,12 @@ Initial interfaces are not yet defined. They will emerge through implementation 
 
 ## Data Model
 Initial project state is document-driven only. Implementation data models are deferred to milestone work.
+
+## Dependency Strategy
+Super_Z80_v2 allows the use of proven third-party libraries when they improve correctness, reduce complexity, or avoid reimplementing mature solutions.
+
+Expected early dependencies include:
+- Z80ex for CPU emulation
+- SDL2 for platform shell functionality
+
+Dependencies must remain minimal and must be documented in the architectural decision log.

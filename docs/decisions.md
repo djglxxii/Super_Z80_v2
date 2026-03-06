@@ -59,3 +59,23 @@
 - Rationale: This minimizes coordination complexity and keeps accountability explicit.
 - Supersedes: None
 - Superseded By: None
+
+## ADR-0006
+- ID: ADR-0006
+- Date: 2026-03-06
+- Status: Accepted
+- Context: Z80 CPU emulation is complex and error-prone to reimplement from scratch.
+- Decision: Use Z80ex as the CPU emulation core.
+- Rationale: Z80ex is a mature implementation that reduces correctness risk and accelerates implementation progress.
+- Supersedes: None
+- Superseded By: None
+
+## ADR-0007
+- ID: ADR-0007
+- Date: 2026-03-06
+- Status: Accepted
+- Context: The emulator requires portable windowing, input handling, and audio output for shell functionality.
+- Decision: Use SDL2 for emulator platform shell functionality.
+- Rationale: SDL2 is a widely used, stable, and portable library suited to shell-layer concerns.
+- Supersedes: None
+- Superseded By: None
