@@ -1,5 +1,14 @@
 find_package(SDL2)
 
+add_library(super_z80_crc32
+    src/crc32.cpp
+)
+
+target_include_directories(super_z80_crc32
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
 add_library(super_z80_core
     src/emulator_core.cpp
 )
@@ -17,6 +26,18 @@ target_link_libraries(super_z80
     PRIVATE
         super_z80_core
 )
+
+add_executable(super_z80_test_crc32
+    tests/unit/test_crc32.cpp
+)
+
+target_link_libraries(super_z80_test_crc32
+    PRIVATE
+        super_z80_crc32
+)
+
+enable_testing()
+add_test(NAME super_z80_test_crc32 COMMAND super_z80_test_crc32)
 
 # Keep runtime path simple for milestone verification commands.
 set_target_properties(super_z80 PROPERTIES

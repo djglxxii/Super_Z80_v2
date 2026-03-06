@@ -1,19 +1,18 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M1
+M2
 
 ## Recent Changes
-- Emulator skeleton created.
-- CMake build system introduced.
-- SDL2 detection configured.
-- Z80ex vendor directory scaffolded.
+- CRC32 utility module added.
+- First unit test executable added for deterministic known-answer checks.
+- CMake test wiring added for CRC32 validation.
 
 ## Known Issues
 None yet.
 
 ## Verification Status
-M1 build and runtime verification in progress.
+M2 build and test verification in progress.
 
 ## Next Step
-M2 - CRC Utilities
+M3 - Memory Subsystem
