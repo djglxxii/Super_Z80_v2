@@ -28,7 +28,7 @@ Implemented a deterministic 64KB byte-addressable memory subsystem with zero-ini
 - `super_z80_test_memory` passed initialization, read/write, address independence, and reset coverage.
 
 ## Commit Hash
-Pending commit creation at report write time.
+7c83cc6
 
 ## Decisions or Notes
 - Implemented the memory subsystem as a narrow standalone library to avoid premature CPU or bus coupling.
