@@ -7,10 +7,18 @@
 namespace superz80 {
 
 Bus::Bus()
-    : rom_(kRomSize, kOpenBusValue) {}
+    : rom_(kRomSize, kOpenBusValue),
+      vdp_(),
+      vblank_(irq_controller_),
+      dma_(/* bus = */ *this) {}
 
 void Bus::reset() {
+    io_.reset();
+    irq_controller_.reset();
     memory_.reset();
+    vdp_.reset();
+    vblank_.reset();
+    dma_.reset();
 }
 
 void Bus::load_rom(const void* data, std::size_t size) {
@@ -41,6 +49,90 @@ void Bus::write(uint16_t address, uint8_t value) {
     if (is_ram_address(address)) {
         memory_.write(ram_offset(address), value);
     }
+}
+
+uint8_t Bus::read_port(uint8_t port) {
+    if (port == kIrqStatusPort) {
+        return irq_controller_.status();
+    }
+
+    if (port == kIrqEnablePort) {
+        return irq_controller_.enable();
+    }
+
+    if (port == kIrqAckPort) {
+        return 0x00U;
+    }
+
+    if (port >= kVdpStatusPort && port <= kVdpFgPatternBankPort) {
+        return vdp_.read_port(port);
+    }
+
+    if (port >= kDmaSrcLowPort && port <= kDmaControlPort) {
+        return dma_.read_register(port);
+    }
+
+    return io_.read(port);
+}
+
+void Bus::write_port(uint8_t port, uint8_t value) {
+    if (port == kIrqStatusPort) {
+        return;
+    }
+
+    if (port == kIrqEnablePort) {
+        irq_controller_.set_enable(value);
+        return;
+    }
+
+    if (port == kIrqAckPort) {
+        irq_controller_.acknowledge(value);
+        return;
+    }
+
+    if (port >= kVdpStatusPort && port <= kVdpFgPatternBankPort) {
+        vdp_.write_port(port, value);
+        return;
+    }
+
+    if (port >= kDmaSrcLowPort && port <= kDmaControlPort) {
+        dma_.write_register(port, value);
+        return;
+    }
+
+    io_.write(port, value);
+}
+
+void Bus::request_irq(uint8_t irq_bit) {
+    irq_controller_.request(irq_bit);
+}
+
+bool Bus::irq_line() const {
+    return irq_controller_.irq_line();
+}
+
+VDP& Bus::vdp() {
+    return vdp_;
+}
+
+const VDP& Bus::vdp() const {
+    return vdp_;
+}
+
+VBlank& Bus::vblank() {
+    return vblank_;
+}
+
+const VBlank& Bus::vblank() const {
+    return vblank_;
+}
+
+DMA& Bus::dma() {
+    return dma_;
+}
+
+const DMA& Bus::dma() const {
+    return dma_;
 }
 
 bool Bus::is_rom_address(uint16_t address) {

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(super_z80 LANGUAGES CXX)
+project(super_z80 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

@@ -1,7 +1,10 @@
-# Z80ex Vendor Placeholder
+# Z80ex Vendor Source
 
-Z80ex will be vendored in this directory in a later milestone.
+This directory contains a vendored drop of Z80ex used by milestone M5.
 
-CPU integration is intentionally deferred during M1.
+Upstream source:
+- Repository: `https://github.com/mkoloberdin/z80ex`
 
-This directory exists to anchor the expected CPU emulation dependency.
+Included files are limited to the library sources required to build the CPU core locally.
+
+License text is preserved in `COPYING`.

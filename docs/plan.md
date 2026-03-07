@@ -8,16 +8,20 @@ Build the project in small deterministic slices. Start with repository bootstrap
 - M1: Emulator skeleton and build system
 - M2: CRC utilities
 - M3: Memory subsystem
-- M4: Input subsystem
-- M5: DMA subsystem
-- M6: VDP core
-- M7: I/O port routing
-- M8: CPU wrapper
-- M9: Emulator coordinator
-- M10: Headless runner
-- M11: Regression harness
-- M12: SDL shell
-- M13: Replay/snapshot parity
+- M4: Bus layer
+- M5: CPU wrapper
+- M6: I/O port routing
+- M7: Scheduler and timing system
+- M8: IRQ controller
+- M9: VBlank interrupt source
+- M10: DMA Engine
+- M11: Video pipeline
+- M12: Audio subsystem
+- M13: Emulator coordinator
+- M14: Headless runner
+- M15: Regression harness
+- M16: SDL shell
+- M17: Replay/snapshot parity
 
 ## Verification Strategy
 Each milestone must define explicit commands and observable pass/fail output.

@@ -22,6 +22,21 @@ Chat history is not authoritative.
 - Stop and report if the task conflicts with repository truth.
 - Prefer simple working implementations over speculative abstractions.
 
+## Milestone Alignment Rule
+When a task involves creating or advancing a milestone (especially any task that would produce a new M##_something_report.md file):
+
+- The milestone identifier and scope **must** align with the **next expected milestone(s)** defined in docs/plan.md.
+- "Next expected" means:
+  - The lowest uncompleted M## from plan.md, or
+  - The next logical sub-step if plan.md uses numbered sub-milestones (e.g. M11.1, M11.2).
+- If the task proposes or would create a milestone that skips, duplicates, or significantly deviates from the current next item(s) in plan.md:
+  1. **Do not proceed** with implementation or report generation.
+  2. Immediately stop and report the conflict to the human composer, including:
+     - The proposed milestone
+     - The actual next expected milestone(s) from plan.md
+     - A recommendation to either update plan.md first or adjust the task
+- This rule takes precedence over proceeding with narrow-scope work when milestones are involved.
+
 ## Determinism Rules
 - Preserve deterministic behavior.
 - Prefer explicit verification commands.
