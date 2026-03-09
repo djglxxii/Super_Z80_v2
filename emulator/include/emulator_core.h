@@ -23,11 +23,15 @@ public:
     EmulatorCore();
 
     void initialize();
+    void load_rom(const void* data, std::size_t size);
     void step_scanline();
+    void step_scanlines(uint32_t count);
     superz80::Bus& bus();
     const superz80::Bus& bus() const;
     std::size_t available_audio_samples() const;
     std::size_t consume_audio_samples(AudioSample* destination, std::size_t max_samples);
+    uint32_t frame() const;
+    uint32_t scanline() const;
 
 private:
     void reset_audio_state();

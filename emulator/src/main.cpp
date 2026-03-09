@@ -1,8 +1,15 @@
 #include "emulator_core.h"
 
 #include <array>
+#include <cstdint>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <string>
+#include <vector>
+
+#include "crc32.h"
 
 #if defined(SUPER_Z80_HAS_SDL)
 #include <SDL.h>
@@ -11,22 +18,201 @@
 
 namespace {
 
+struct Options {
+    bool show_help = false;
+    bool show_version = false;
+    bool use_sdl_input = false;
+    bool use_sdl_audio = false;
+    bool headless = false;
+    std::string rom_path;
+    uint32_t frames = 1U;
+};
+
 void print_header() {
     std::cout << "Super_Z80_v2 Emulator" << std::endl;
 }
 
 void print_help() {
     print_header();
-    std::cout << "Usage: super_z80 [--help] [--version] [--sdl-input] [--sdl-audio]" << std::endl;
+    std::cout << "Usage: super_z80 [--help] [--version] [--sdl-input] [--sdl-audio] [--rom <path>] [--headless] [--frames <count>]" << std::endl;
     std::cout << "  --help       Show this help message" << std::endl;
     std::cout << "  --version    Show version information" << std::endl;
     std::cout << "  --sdl-input  Run the SDL controller input shell" << std::endl;
     std::cout << "  --sdl-audio  Run the SDL audio playback shell" << std::endl;
+    std::cout << "  --rom        Load an external ROM from disk" << std::endl;
+    std::cout << "  --headless   Run the loaded ROM without SDL interaction" << std::endl;
+    std::cout << "  --frames     Number of frames to execute in headless mode (default: 1)" << std::endl;
 }
 
 void print_version() {
     print_header();
     std::cout << "Version: dev" << std::endl;
+}
+
+bool parse_u32(const std::string& text, uint32_t& value) {
+    try {
+        std::size_t parsed = 0U;
+        const unsigned long number = std::stoul(text, &parsed, 10);
+        if (parsed != text.size() || number == 0UL) {
+            return false;
+        }
+
+        value = static_cast<uint32_t>(number);
+        return static_cast<unsigned long>(value) == number;
+    } catch (...) {
+        return false;
+    }
+}
+
+bool parse_arguments(int argc, char* argv[], Options& options, std::string& error_message) {
+    for (int index = 1; index < argc; ++index) {
+        const std::string arg = argv[index];
+
+        if (arg == "--help") {
+            options.show_help = true;
+            continue;
+        }
+
+        if (arg == "--version") {
+            options.show_version = true;
+            continue;
+        }
+
+        if (arg == "--sdl-input") {
+            options.use_sdl_input = true;
+            continue;
+        }
+
+        if (arg == "--sdl-audio") {
+            options.use_sdl_audio = true;
+            continue;
+        }
+
+        if (arg == "--headless") {
+            options.headless = true;
+            continue;
+        }
+
+        if (arg == "--rom") {
+            if (index + 1 >= argc) {
+                error_message = "Missing value for --rom.";
+                return false;
+            }
+
+            options.rom_path = argv[++index];
+            continue;
+        }
+
+        if (arg == "--frames") {
+            if (index + 1 >= argc) {
+                error_message = "Missing value for --frames.";
+                return false;
+            }
+
+            if (!parse_u32(argv[++index], options.frames)) {
+                error_message = "Invalid frame count for --frames: must be a positive integer.";
+                return false;
+            }
+            continue;
+        }
+
+        error_message = "Unknown argument: " + arg;
+        return false;
+    }
+
+    if (!options.rom_path.empty() &&
+        !options.headless &&
+        !options.use_sdl_input &&
+        !options.use_sdl_audio) {
+        options.headless = true;
+    }
+
+    if (options.headless && options.rom_path.empty()) {
+        error_message = "Headless execution requires --rom <path>.";
+        return false;
+    }
+
+    if (!options.rom_path.empty() && (options.use_sdl_input || options.use_sdl_audio)) {
+        error_message = "External ROM execution currently supports headless mode only.";
+        return false;
+    }
+
+    return true;
+}
+
+bool load_rom_file(const std::string& path, std::vector<uint8_t>& bytes, std::string& error_message) {
+    std::ifstream file(path, std::ios::binary);
+    if (!file.is_open()) {
+        error_message = "Unable to open ROM file: " + path;
+        return false;
+    }
+
+    file.seekg(0, std::ios::end);
+    const std::streamoff length = file.tellg();
+    if (length < 0) {
+        error_message = "Unable to determine ROM file size: " + path;
+        return false;
+    }
+
+    file.seekg(0, std::ios::beg);
+    bytes.assign(static_cast<std::size_t>(length), 0U);
+    if (!bytes.empty()) {
+        file.read(reinterpret_cast<char*>(bytes.data()), length);
+        if (!file) {
+            error_message = "Unable to read ROM file: " + path;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+std::vector<uint8_t> collect_ram_image(const EmulatorCore& core) {
+    std::vector<uint8_t> ram(superz80::Bus::kRamWindowSize, 0U);
+    for (std::size_t offset = 0U; offset < ram.size(); ++offset) {
+        const uint16_t address = static_cast<uint16_t>(superz80::Bus::kRamStart + offset);
+        ram[offset] = core.bus().read(address);
+    }
+    return ram;
+}
+
+std::vector<EmulatorCore::AudioSample> collect_audio_samples(EmulatorCore& core) {
+    std::vector<EmulatorCore::AudioSample> samples(core.available_audio_samples(), 0);
+    if (!samples.empty()) {
+        core.consume_audio_samples(samples.data(), samples.size());
+    }
+    return samples;
+}
+
+int run_headless_rom(EmulatorCore& core, const std::string& rom_path, uint32_t frames) {
+    std::vector<uint8_t> rom_bytes;
+    std::string error_message;
+    if (!load_rom_file(rom_path, rom_bytes, error_message)) {
+        std::cerr << error_message << std::endl;
+        return 1;
+    }
+
+    core.load_rom(rom_bytes.data(), rom_bytes.size());
+    core.step_scanlines(frames * superz80::Scheduler::kScanlinesPerFrame);
+
+    const std::vector<uint8_t> ram_image = collect_ram_image(core);
+    const std::vector<EmulatorCore::AudioSample> audio_samples = collect_audio_samples(core);
+    const uint32_t ram_crc = superz80::crc32(ram_image.data(), ram_image.size());
+    const uint32_t audio_crc = superz80::crc32(audio_samples.data(),
+                                               audio_samples.size() * sizeof(EmulatorCore::AudioSample));
+
+    std::ostringstream summary;
+    summary << "HEADLESS_ROM_RESULT"
+            << " rom_crc32=0x" << std::hex << std::uppercase << superz80::crc32(rom_bytes.data(), rom_bytes.size())
+            << " ram_crc32=0x" << ram_crc
+            << " audio_crc32=0x" << audio_crc
+            << std::dec
+            << " frames=" << frames
+            << " frame_counter=" << core.frame()
+            << " scanline_counter=" << core.scanline()
+            << " audio_samples=" << audio_samples.size();
+    std::cout << summary.str() << std::endl;
+    return 0;
 }
 
 #if defined(SUPER_Z80_HAS_SDL)
@@ -303,18 +489,29 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    const std::string arg = argv[1];
-    if (arg == "--help") {
+    Options options;
+    std::string error_message;
+    if (!parse_arguments(argc, argv, options, error_message)) {
+        std::cerr << error_message << std::endl;
+        print_help();
+        return 1;
+    }
+
+    if (options.show_help) {
         print_help();
         return 0;
     }
 
-    if (arg == "--version") {
+    if (options.show_version) {
         print_version();
         return 0;
     }
 
-    if (arg == "--sdl-input") {
+    if (!options.rom_path.empty() && options.headless) {
+        return run_headless_rom(core, options.rom_path, options.frames);
+    }
+
+    if (options.use_sdl_input) {
 #if defined(SUPER_Z80_HAS_SDL)
         return run_sdl_input_shell(core);
 #else
@@ -323,7 +520,7 @@ int main(int argc, char* argv[]) {
 #endif
     }
 
-    if (arg == "--sdl-audio") {
+    if (options.use_sdl_audio) {
 #if defined(SUPER_Z80_HAS_SDL)
         return run_sdl_audio_shell(core);
 #else
@@ -332,7 +529,6 @@ int main(int argc, char* argv[]) {
 #endif
     }
 
-    std::cerr << "Unknown argument: " << arg << std::endl;
     print_help();
-    return 1;
+    return 0;
 }

@@ -29,9 +29,19 @@ void EmulatorCore::initialize() {
     std::cout << "Emulator core initialized (audio output ready)." << std::endl;
 }
 
+void EmulatorCore::load_rom(const void* data, std::size_t size) {
+    bus_.load_rom(data, size);
+}
+
 void EmulatorCore::step_scanline() {
     scheduler_.step_scanline();
     produce_scanline_audio();
+}
+
+void EmulatorCore::step_scanlines(uint32_t count) {
+    for (uint32_t scanline = 0U; scanline < count; ++scanline) {
+        step_scanline();
+    }
 }
 
 superz80::Bus& EmulatorCore::bus() {
@@ -59,6 +69,14 @@ std::size_t EmulatorCore::consume_audio_samples(AudioSample* destination, std::s
 
     audio_buffer_size_ -= samples_to_copy;
     return samples_to_copy;
+}
+
+uint32_t EmulatorCore::frame() const {
+    return scheduler_.frame();
+}
+
+uint32_t EmulatorCore::scanline() const {
+    return scheduler_.scanline();
 }
 
 void EmulatorCore::reset_audio_state() {

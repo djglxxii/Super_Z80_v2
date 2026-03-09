@@ -221,6 +221,7 @@ add_executable(super_z80
 
 target_link_libraries(super_z80
     PRIVATE
+        super_z80_crc32
         super_z80_core
 )
 
@@ -382,6 +383,10 @@ add_executable(super_z80_test_vdp_vblank_irq
 
 add_executable(super_z80_test_input_audio_integration
     tests/integration/test_input_audio_integration.cpp
+)
+
+add_executable(super_z80_test_external_rom_execution
+    tests/integration/test_external_rom_execution.cpp
 )
 
 if (SDL2_FOUND)
@@ -578,6 +583,12 @@ target_link_libraries(super_z80_test_input_audio_integration
         super_z80_core
 )
 
+target_compile_definitions(super_z80_test_external_rom_execution
+    PRIVATE
+        SUPER_Z80_BINARY_PATH="$<TARGET_FILE:super_z80>"
+        SUPER_Z80_TEST_TEMP_DIR="${CMAKE_CURRENT_BINARY_DIR}"
+)
+
 if (SDL2_FOUND)
     target_compile_definitions(super_z80_test_audio_output_integration
         PRIVATE
@@ -652,6 +663,7 @@ add_test(NAME super_z80_test_platform_determinism COMMAND super_z80_test_platfor
 add_test(NAME super_z80_test_cpu_dma_irq_integration COMMAND super_z80_test_cpu_dma_irq_integration)
 add_test(NAME super_z80_test_vdp_vblank_irq COMMAND super_z80_test_vdp_vblank_irq)
 add_test(NAME super_z80_test_input_audio_integration COMMAND super_z80_test_input_audio_integration)
+add_test(NAME super_z80_test_external_rom_execution COMMAND super_z80_test_external_rom_execution)
 if (SDL2_FOUND)
     add_test(NAME super_z80_test_sdl_audio_output COMMAND super_z80_test_sdl_audio_output)
 endif ()
