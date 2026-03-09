@@ -405,7 +405,8 @@ int main() {
 
     bus.reset();
     cpu.reset();
-    superz80::Scheduler scheduler(cpu, bus.vdp(), bus.vblank(), bus.dma(), bus.ym2151());
+    superz80::Scheduler scheduler(cpu, bus.vdp(), bus.vblank(), bus.dma(), bus.apu(),
+                                  bus.ym2151());
     scheduler.reset();
     scheduler.step_scanline();
     ok = expect_equal_u64("scheduler-calls-ym2151-tick-hook", bus.ym2151().tick_call_count(), 1U) && ok;

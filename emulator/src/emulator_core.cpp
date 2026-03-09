@@ -13,7 +13,7 @@ constexpr uint32_t kAudioSampleRateDivisor =
 EmulatorCore::EmulatorCore()
     : bus_(),
       cpu_(bus_),
-      scheduler_(cpu_, bus_.vdp(), bus_.vblank(), bus_.dma(), bus_.ym2151()),
+      scheduler_(cpu_, bus_.vdp(), bus_.vblank(), bus_.dma(), bus_.apu(), bus_.ym2151()),
       audio_buffer_{},
       audio_read_index_(0U),
       audio_write_index_(0U),
@@ -73,7 +73,8 @@ void EmulatorCore::produce_scanline_audio() {
     scanline_sample_remainder_ += superz80::APU::kSampleRateHz;
     while (scanline_sample_remainder_ >= kScanlinesPerSecond) {
         scanline_sample_remainder_ -= kScanlinesPerSecond;
-        const AudioSample sample = bus_.apu().advance_and_generate_sample(next_audio_tick_count());
+        scheduler_.step_audio_sample(next_audio_tick_count());
+        const AudioSample sample = scheduler_.current_audio_sample();
         push_audio_sample(sample);
     }
 }

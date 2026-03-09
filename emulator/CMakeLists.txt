@@ -52,6 +52,10 @@ add_library(super_z80_apu
     src/apu.cpp
 )
 
+add_library(super_z80_audio_mixer
+    audio/mixer/audio_mixer.cpp
+)
+
 add_library(super_z80_ym2151
     audio/ym2151/ym2151.cpp
 )
@@ -110,9 +114,16 @@ target_include_directories(super_z80_apu
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+target_include_directories(super_z80_audio_mixer
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/audio/mixer
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
 target_include_directories(super_z80_ym2151
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/audio/ym2151
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 target_include_directories(super_z80_vdp
@@ -155,9 +166,12 @@ target_link_libraries(super_z80_cpu
 
 target_link_libraries(super_z80_scheduler
     PUBLIC
+        super_z80_audio_mixer
+        super_z80_apu
         super_z80_cpu
         super_z80_vdp
         super_z80_vblank
+        super_z80_ym2151
 )
 
 add_library(super_z80_core
@@ -318,6 +332,10 @@ add_executable(super_z80_test_audio_noise_behavior
 
 add_executable(super_z80_test_audio_determinism
     tests/unit/test_audio_determinism.cpp
+)
+
+add_executable(super_z80_test_audio_mixer
+    tests/unit/test_audio_mixer.cpp
 )
 
 add_executable(super_z80_test_ym2151
@@ -497,6 +515,11 @@ target_link_libraries(super_z80_test_audio_determinism
         super_z80_core
 )
 
+target_link_libraries(super_z80_test_audio_mixer
+    PRIVATE
+        super_z80_audio_mixer
+)
+
 target_link_libraries(super_z80_test_ym2151
     PRIVATE
         super_z80_scheduler
@@ -569,6 +592,7 @@ add_test(NAME super_z80_test_audio_register_behavior COMMAND super_z80_test_audi
 add_test(NAME super_z80_test_audio_mixing_behavior COMMAND super_z80_test_audio_mixing_behavior)
 add_test(NAME super_z80_test_audio_noise_behavior COMMAND super_z80_test_audio_noise_behavior)
 add_test(NAME super_z80_test_audio_determinism COMMAND super_z80_test_audio_determinism)
+add_test(NAME super_z80_test_audio_mixer COMMAND super_z80_test_audio_mixer)
 add_test(NAME super_z80_test_ym2151 COMMAND super_z80_test_ym2151)
 add_test(NAME super_z80_test_platform_determinism COMMAND super_z80_test_platform_determinism)
 add_test(NAME super_z80_test_cpu_dma_irq_integration COMMAND super_z80_test_cpu_dma_irq_integration)

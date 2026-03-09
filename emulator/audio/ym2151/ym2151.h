@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "apu.h"
+
 namespace superz80 {
 
 enum class YM2151EnvelopeState : uint8_t {
@@ -49,7 +51,7 @@ struct YM2151Timer {
     bool irq_enabled;
 };
 
-class YM2151 {
+class YM2151 : public AudioSampleSource {
 public:
     static constexpr uint8_t kRegisterSelectPort = 0x70U;
     static constexpr uint8_t kRegisterDataPort = 0x71U;
@@ -75,7 +77,7 @@ public:
     const YM2151Timer& timer_b() const;
     uint8_t status() const;
     bool irq_pending() const;
-    int16_t current_sample() const;
+    int16_t current_sample() const override;
     uint64_t tick_call_count() const;
     uint64_t accumulated_cycles() const;
 

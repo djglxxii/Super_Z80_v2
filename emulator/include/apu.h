@@ -7,7 +7,13 @@
 
 namespace superz80 {
 
-class APU {
+class AudioSampleSource {
+public:
+    virtual ~AudioSampleSource() = default;
+    virtual int16_t current_sample() const = 0;
+};
+
+class APU : public AudioSampleSource {
 public:
     using Sample = int16_t;
 
@@ -38,6 +44,7 @@ public:
     Sample generate_current_sample();
     Sample advance_and_generate_sample(uint32_t tick_count);
     void flag_sample_queue_overrun();
+    int16_t current_sample() const override;
 
     uint16_t tone_period(std::size_t channel) const;
     uint8_t volume(std::size_t channel) const;

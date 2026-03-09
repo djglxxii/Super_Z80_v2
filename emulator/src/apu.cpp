@@ -133,6 +133,10 @@ APU::Sample APU::advance_and_generate_sample(uint32_t tick_count) {
     return generate_current_sample();
 }
 
+int16_t APU::current_sample() const {
+    return sample_output_state_.current_sample;
+}
+
 void APU::flag_sample_queue_overrun() {
     overrun_ = true;
 }

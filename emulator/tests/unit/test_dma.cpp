@@ -107,7 +107,8 @@ int main() {
     ok = expect_equal_u8("zero-length-start-does-not-copy", bus.read(0xC030U), 0x00U) && ok;
 
     superz80::CPU cpu(bus);
-    superz80::Scheduler scheduler(cpu, bus.vdp(), bus.vblank(), bus.dma(), bus.ym2151());
+    superz80::Scheduler scheduler(cpu, bus.vdp(), bus.vblank(), bus.dma(), bus.apu(),
+                                  bus.ym2151());
 
     bus.reset();
     cpu.reset();

@@ -41,7 +41,8 @@ int main() {
 
     superz80::Bus bus;
     superz80::CPU cpu(bus);
-    superz80::Scheduler scheduler(cpu, bus.vdp(), bus.vblank(), bus.dma(), bus.ym2151());
+    superz80::Scheduler scheduler(cpu, bus.vdp(), bus.vblank(), bus.dma(), bus.apu(),
+                                  bus.ym2151());
 
     scheduler.reset();
     ok = expect_equal_u32("reset-frame", scheduler.frame(), 0U) && ok;
