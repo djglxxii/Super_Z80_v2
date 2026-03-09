@@ -41,7 +41,7 @@ int main() {
 
     superz80::Bus bus;
     superz80::CPU cpu(bus);
-    superz80::Scheduler scheduler(cpu, bus.vdp(), bus.vblank(), bus.dma());
+    superz80::Scheduler scheduler(cpu, bus.vdp(), bus.vblank(), bus.dma(), bus.ym2151());
 
     scheduler.reset();
     ok = expect_equal_u32("reset-frame", scheduler.frame(), 0U) && ok;
@@ -50,6 +50,12 @@ int main() {
     scheduler.step_scanline();
     ok = expect_equal_u32("scanline-increment", scheduler.scanline(), 1U) && ok;
     ok = expect_equal_u32("frame-still-zero-after-one-scanline", scheduler.frame(), 0U) && ok;
+    ok = expect_equal_u32("ym2151-tick-hook-called-on-scanline",
+                         static_cast<uint32_t>(bus.ym2151().tick_call_count()),
+                         1U) && ok;
+    ok = expect_equal_u32("ym2151-fixed-cycle-budget-used-on-scanline",
+                         static_cast<uint32_t>(bus.ym2151().accumulated_cycles()),
+                         superz80::Scheduler::kYm2151CyclesPerScanline) && ok;
 
     scheduler.reset();
     for (uint32_t i = 0U; i < superz80::Scheduler::kScanlinesPerFrame; ++i) {

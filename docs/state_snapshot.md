@@ -1,19 +1,32 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M28
+M29c
 
 ## Audio Status
 Current validated audio implementation:
 - PSG-style APU only
 
 Planned audio expansion:
-- YM2151 FM subsystem
-- scheduled for future M29 milestone block
+- YM2151 FM subsystem register interface, deterministic internal channel/operator state, and deterministic timer/status/IRQ-facing behavior implemented on ports `0x70-0x71`
+- no FM synthesis or mixer integration yet
 
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M29c complete.
+- YM2151 now stores deterministic Timer A and Timer B latch/counter state, enable bits, overflow flags, and IRQ enable bits alongside the existing channel/operator model.
+- YM2151 timer control register writes now update timer start, IRQ-enable, and overflow-clear behavior while preserving raw register storage, and status reads on port `0x70` now expose timer overflow bits.
+- `YM2151::tick(uint32_t cycles)` now advances timers deterministically from explicit scheduler-owned cycles, with Timer A using a `1024 - latch` countdown model and Timer B using a `(256 - latch) * 16` countdown model as the current minimal deterministic contract for future FM work.
+- YM2151 now exposes an IRQ-facing pending signal when an enabled timer overflows with its IRQ-enable bit set, and the bus exposes that pending state through a dedicated accessor without routing it into CPU interrupt delivery yet.
+- YM2151 unit coverage now verifies timer latch storage, disabled/enabled advancement, overflow/status behavior, IRQ gating, clear-control semantics, repeatability, bus-visible pending state, and the scheduler-owned nonzero YM2151 cycle budget.
+- M29b complete.
+- YM2151 now stores deterministic per-channel and per-operator FM state, including algorithm, feedback, frequency/block, key-on state, and placeholder phase counters for all 8 channels and 32 operators.
+- YM2151 register writes now decode into channel/operator structures while preserving raw register storage, and `tick(uint32_t cycles)` advances keyed operators through deterministic placeholder phase progression without generating audio.
+- YM2151 unit coverage now verifies channel/operator decode, CPU-visible key-on behavior, frequency/block updates, operator parameter storage, and deterministic tick progression.
+- M29a complete.
+- YM2151 register interface implemented with deterministic internal register storage, CPU-visible address/data ports on `0x70-0x71`, and a scheduler-owned `tick(uint32_t cycles)` hook for future FM timing work.
+- Bus routing and unit-test coverage now verify direct device writes, CPU `OUT` sequencing through the YM2151 ports, and scheduler invocation of the placeholder timing hook without generating FM audio.
 - Developer-facing platform documentation added for the implemented hardware model, including a canonical hardware reference plus separate graphics, audio, input, timing, and development workflow guides.
 - The new M28 docs describe the validated platform exactly as implemented: fixed `32 KiB` ROM, `16 KiB` RAM, VDP ports `0xE0-0xED`, controller ports `0xDC-0xDD`, IRQ and DMA ports `0xF0-0xF9`, and the PSG-style audio block on `0xD0-0xDB`.
 - Repository truth now explicitly documents the current platform limits for ROM authors, including the absence of YM2151/FM hardware, the fixed interrupt vector path through `RST 38h`, and SDL shell features as non-authoritative development aids.
@@ -144,9 +157,15 @@ PCM remains excluded from the platform design.
 None yet.
 
 ## Verification Status
+M29c YM2151 verification is passing with the deterministic build/test flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure --tests-regex "super_z80_test_(ym2151|scheduler|bus)"`, and `ctest --test-dir build --output-on-failure`. The expanded `super_z80_test_ym2151` coverage verifies timer latch storage, disabled/enabled deterministic progression, Timer A and Timer B overflow/status bits, IRQ-pending gating, control-path clears, repeatability, bus-visible pending state, and the scheduler-owned fixed YM2151 cycle budget.
+
+M29b YM2151 verification is passing with the deterministic build/test flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure --tests-regex "super_z80_test_(ym2151|scheduler|bus)"`, and `ctest --test-dir build --output-on-failure`. The expanded `super_z80_test_ym2151` coverage verifies channel/operator state decode, key-on writes, frequency/block updates, operator parameter storage, CPU-visible `OUT` behavior on ports `0x70-0x71`, and deterministic placeholder phase progression.
+
+M29a YM2151 verification is passing with the full deterministic build/test flow: `cmake -S . -B build`, `cmake --build build`, and `ctest --test-dir build --output-on-failure`. The new `super_z80_test_ym2151` coverage verifies register selection, register writes, CPU-visible `OUT` behavior on ports `0x70-0x71`, and scheduler invocation of the placeholder timing hook.
+
 M28 documentation verification passing: `test -f docs/developer_guide.md`, `test -f docs/hardware_reference.md`, `test -f docs/programming_graphics.md`, `test -f docs/programming_audio.md`, `test -f docs/programming_input.md`, and `test -f docs/platform_timing.md`.
 
 Most recent implementation verification remains the passing M27 run: `cmake -S . -B build`, `cmake --build build`, and `ctest --test-dir build --output-on-failure`. The full suite included `super_z80_test_platform_determinism`, `super_z80_test_cpu_dma_irq_integration`, `super_z80_test_vdp_vblank_irq`, and `super_z80_test_input_audio_integration`, all passing in the shared deterministic headless build.
 
 ## Next Step
-Execute the future `M29a-M29f` YM2151 planning block only when implementation work is explicitly tasked; until then, the validated platform remains PSG-only.
+Execute `M29d` to add deterministic YM2151 FM sample generation on top of the now-implemented register, channel/operator, and timer/IRQ state model.

@@ -17,6 +17,7 @@ void Bus::reset() {
     irq_controller_.reset();
     memory_.reset();
     apu_.reset();
+    ym2151_.reset();
     vdp_.reset();
     vblank_.reset();
     dma_.reset();
@@ -73,6 +74,10 @@ uint8_t Bus::read_port(uint8_t port) {
         return apu_.read_port(port);
     }
 
+    if (port >= YM2151::kPortStart && port <= YM2151::kPortEnd) {
+        return ym2151_.read_port(port);
+    }
+
     if (port >= kDmaSrcLowPort && port <= kDmaControlPort) {
         return dma_.read_register(port);
     }
@@ -105,6 +110,11 @@ void Bus::write_port(uint8_t port, uint8_t value) {
         return;
     }
 
+    if (port >= YM2151::kPortStart && port <= YM2151::kPortEnd) {
+        ym2151_.write_port(port, value);
+        return;
+    }
+
     if (port >= kDmaSrcLowPort && port <= kDmaControlPort) {
         dma_.write_register(port, value);
         return;
@@ -127,6 +137,10 @@ void Bus::request_irq(uint8_t irq_bit) {
 
 bool Bus::irq_line() const {
     return irq_controller_.irq_line();
+}
+
+bool Bus::ym2151_irq_pending() const {
+    return ym2151_.irq_pending();
 }
 
 VDP& Bus::vdp() {
@@ -159,6 +173,14 @@ APU& Bus::apu() {
 
 const APU& Bus::apu() const {
     return apu_;
+}
+
+YM2151& Bus::ym2151() {
+    return ym2151_;
+}
+
+const YM2151& Bus::ym2151() const {
+    return ym2151_;
 }
 
 bool Bus::is_rom_address(uint16_t address) {

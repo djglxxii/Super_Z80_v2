@@ -13,7 +13,7 @@ constexpr uint32_t kAudioSampleRateDivisor =
 EmulatorCore::EmulatorCore()
     : bus_(),
       cpu_(bus_),
-      scheduler_(cpu_, bus_.vdp(), bus_.vblank(), bus_.dma()),
+      scheduler_(cpu_, bus_.vdp(), bus_.vblank(), bus_.dma(), bus_.ym2151()),
       audio_buffer_{},
       audio_read_index_(0U),
       audio_write_index_(0U),

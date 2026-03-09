@@ -11,6 +11,7 @@
 #include "memory.h"
 #include "vdp.h"
 #include "vblank.h"
+#include "ym2151.h"
 
 namespace superz80 {
 
@@ -61,6 +62,8 @@ public:
     static constexpr uint8_t kAudioVolumeCPort = APU::kVolumeCPort;
     static constexpr uint8_t kAudioVolumeNoisePort = APU::kVolumeNoisePort;
     static constexpr uint8_t kAudioControlPort = APU::kControlPort;
+    static constexpr uint8_t kYm2151RegisterSelectPort = YM2151::kRegisterSelectPort;
+    static constexpr uint8_t kYm2151RegisterDataPort = YM2151::kRegisterDataPort;
 
     Bus();
 
@@ -75,6 +78,7 @@ public:
     bool controller_button(IO::Button button) const;
     void request_irq(uint8_t irq_bit);
     bool irq_line() const;
+    bool ym2151_irq_pending() const;
     VDP& vdp();
     const VDP& vdp() const;
     VBlank& vblank();
@@ -83,6 +87,8 @@ public:
     const DMA& dma() const;
     APU& apu();
     const APU& apu() const;
+    YM2151& ym2151();
+    const YM2151& ym2151() const;
 
 private:
     static constexpr uint8_t kOpenBusValue = 0xFFU;
@@ -96,6 +102,7 @@ private:
     IRQController irq_controller_;
     Memory memory_;
     APU apu_;
+    YM2151 ym2151_;
     VDP vdp_;
     VBlank vblank_;
     DMA dma_;

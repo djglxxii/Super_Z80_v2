@@ -2,11 +2,12 @@
 
 namespace superz80 {
 
-Scheduler::Scheduler(CPU& cpu, VDP& vdp, VBlank& vblank, DMA& dma)
+Scheduler::Scheduler(CPU& cpu, VDP& vdp, VBlank& vblank, DMA& dma, YM2151& ym2151)
     : cpu_(cpu),
       vdp_(vdp),
       vblank_(vblank),
       dma_(dma),
+      ym2151_(ym2151),
       frame_(0U),
       scanline_(0U) {}
 
@@ -23,6 +24,7 @@ void Scheduler::step_scanline() {
     }
 
     dma_.step();
+    ym2151_.tick(kYm2151CyclesPerScanline);
 
     ++scanline_;
     if (scanline_ == kScanlinesPerFrame) {
