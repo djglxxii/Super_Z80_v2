@@ -39,6 +39,8 @@ int main() {
     io.reset();
     ok = expect_equal("reset-clears-port-0x10", io.read(0x10U), 0x00U) && ok;
     ok = expect_equal("reset-clears-port-0xFE", io.read(0xFEU), 0x00U) && ok;
+    ok = expect_equal("pad1-default-idle", io.read(superz80::IO::kPad1Port), superz80::IO::kPad1IdleValue) && ok;
+    ok = expect_equal("pad1-sys-default-idle", io.read(superz80::IO::kPad1SysPort), superz80::IO::kPad1SysIdleValue) && ok;
 
     return ok ? 0 : 1;
 }

@@ -48,6 +48,10 @@ add_library(super_z80_vblank
     src/vblank.cpp
 )
 
+add_library(super_z80_apu
+    src/apu.cpp
+)
+
 add_library(super_z80_vdp
     src/vdp.cpp
 )
@@ -97,6 +101,11 @@ target_include_directories(super_z80_vblank
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+target_include_directories(super_z80_apu
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
 target_include_directories(super_z80_vdp
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -119,6 +128,7 @@ target_include_directories(super_z80_scheduler
 
 target_link_libraries(super_z80_bus
     PUBLIC
+        super_z80_apu
         super_z80_io
         super_z80_irq_controller
         super_z80_memory
@@ -149,6 +159,13 @@ target_include_directories(super_z80_core
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+target_link_libraries(super_z80_core
+    PUBLIC
+        super_z80_bus
+        super_z80_cpu
+        super_z80_scheduler
+)
+
 add_executable(super_z80
     src/main.cpp
 )
@@ -157,6 +174,21 @@ target_link_libraries(super_z80
     PRIVATE
         super_z80_core
 )
+
+if (SDL2_FOUND)
+    target_compile_definitions(super_z80
+        PRIVATE
+            SUPER_Z80_HAS_SDL
+    )
+    target_include_directories(super_z80
+        PRIVATE
+            ${SDL2_INCLUDE_DIRS}
+    )
+    target_link_libraries(super_z80
+        PRIVATE
+            ${SDL2_LIBRARIES}
+    )
+endif ()
 
 add_executable(super_z80_test_crc32
     tests/unit/test_crc32.cpp
@@ -240,6 +272,58 @@ add_executable(super_z80_test_sprite_collision
 
 add_executable(super_z80_test_tile_pattern_banks
     tests/unit/test_tile_pattern_banks.cpp
+)
+
+add_executable(super_z80_test_input
+    tests/unit/test_input.cpp
+)
+
+add_executable(super_z80_test_apu
+    tests/unit/test_apu.cpp
+)
+
+add_executable(super_z80_test_apu_generators
+    tests/unit/test_apu_generators.cpp
+)
+
+add_executable(super_z80_test_apu_mixer
+    tests/unit/test_apu_mixer.cpp
+)
+
+add_executable(super_z80_test_audio_output_integration
+    tests/unit/test_audio_output_integration.cpp
+)
+
+add_executable(super_z80_test_audio_register_behavior
+    tests/unit/test_audio_register_behavior.cpp
+)
+
+add_executable(super_z80_test_audio_mixing_behavior
+    tests/unit/test_audio_mixing_behavior.cpp
+)
+
+add_executable(super_z80_test_audio_noise_behavior
+    tests/unit/test_audio_noise_behavior.cpp
+)
+
+add_executable(super_z80_test_audio_determinism
+    tests/unit/test_audio_determinism.cpp
+)
+
+add_executable(super_z80_test_platform_determinism
+    tests/integration/test_platform_determinism.cpp
+)
+
+add_executable(super_z80_test_cpu_dma_irq_integration
+    tests/integration/test_cpu_dma_irq_integration.cpp
+)
+
+add_executable(super_z80_test_vdp_vblank_irq
+    tests/integration/test_vdp_vblank_irq.cpp
+)
+
+add_executable(super_z80_test_input_audio_integration
+    tests/integration/test_input_audio_integration.cpp
 )
 
 target_link_libraries(super_z80_test_crc32
@@ -353,6 +437,87 @@ target_link_libraries(super_z80_test_tile_pattern_banks
         super_z80_vdp
 )
 
+target_link_libraries(super_z80_test_input
+    PRIVATE
+        super_z80_bus
+)
+
+target_link_libraries(super_z80_test_apu
+    PRIVATE
+        super_z80_bus
+        super_z80_cpu
+)
+
+target_link_libraries(super_z80_test_apu_generators
+    PRIVATE
+        super_z80_apu
+)
+
+target_link_libraries(super_z80_test_apu_mixer
+    PRIVATE
+        super_z80_apu
+)
+
+target_link_libraries(super_z80_test_audio_output_integration
+    PRIVATE
+        super_z80_core
+)
+
+target_link_libraries(super_z80_test_audio_register_behavior
+    PRIVATE
+        super_z80_apu
+)
+
+target_link_libraries(super_z80_test_audio_mixing_behavior
+    PRIVATE
+        super_z80_apu
+)
+
+target_link_libraries(super_z80_test_audio_noise_behavior
+    PRIVATE
+        super_z80_apu
+)
+
+target_link_libraries(super_z80_test_audio_determinism
+    PRIVATE
+        super_z80_core
+)
+
+target_link_libraries(super_z80_test_platform_determinism
+    PRIVATE
+        super_z80_core
+)
+
+target_link_libraries(super_z80_test_cpu_dma_irq_integration
+    PRIVATE
+        super_z80_scheduler
+)
+
+target_link_libraries(super_z80_test_vdp_vblank_irq
+    PRIVATE
+        super_z80_scheduler
+)
+
+target_link_libraries(super_z80_test_input_audio_integration
+    PRIVATE
+        super_z80_core
+)
+
+if (SDL2_FOUND)
+    target_compile_definitions(super_z80_test_audio_determinism
+        PRIVATE
+            SUPER_Z80_HAS_SDL
+    )
+    target_include_directories(super_z80_test_audio_determinism
+        PRIVATE
+            ${SDL2_INCLUDE_DIRS}
+    )
+    target_link_libraries(super_z80_test_audio_determinism
+        PRIVATE
+            ${SDL2_LIBRARIES}
+    )
+endif ()
+
 enable_testing()
 add_test(NAME super_z80_test_crc32 COMMAND super_z80_test_crc32)
 add_test(NAME super_z80_test_memory COMMAND super_z80_test_memory)
@@ -375,6 +540,19 @@ add_test(NAME super_z80_test_sprite_flipping COMMAND super_z80_test_sprite_flipp
 add_test(NAME super_z80_test_sprite_pattern_banks COMMAND super_z80_test_sprite_pattern_banks)
 add_test(NAME super_z80_test_sprite_collision COMMAND super_z80_test_sprite_collision)
 add_test(NAME super_z80_test_tile_pattern_banks COMMAND super_z80_test_tile_pattern_banks)
+add_test(NAME super_z80_test_input COMMAND super_z80_test_input)
+add_test(NAME super_z80_test_apu COMMAND super_z80_test_apu)
+add_test(NAME super_z80_test_apu_generators COMMAND super_z80_test_apu_generators)
+add_test(NAME super_z80_test_apu_mixer COMMAND super_z80_test_apu_mixer)
+add_test(NAME super_z80_test_audio_output_integration COMMAND super_z80_test_audio_output_integration)
+add_test(NAME super_z80_test_audio_register_behavior COMMAND super_z80_test_audio_register_behavior)
+add_test(NAME super_z80_test_audio_mixing_behavior COMMAND super_z80_test_audio_mixing_behavior)
+add_test(NAME super_z80_test_audio_noise_behavior COMMAND super_z80_test_audio_noise_behavior)
+add_test(NAME super_z80_test_audio_determinism COMMAND super_z80_test_audio_determinism)
+add_test(NAME super_z80_test_platform_determinism COMMAND super_z80_test_platform_determinism)
+add_test(NAME super_z80_test_cpu_dma_irq_integration COMMAND super_z80_test_cpu_dma_irq_integration)
+add_test(NAME super_z80_test_vdp_vblank_irq COMMAND super_z80_test_vdp_vblank_irq)
+add_test(NAME super_z80_test_input_audio_integration COMMAND super_z80_test_input_audio_integration)
 
 # Keep runtime path simple for milestone verification commands.
 set_target_properties(super_z80 PROPERTIES

@@ -47,12 +47,22 @@ With the VDP frozen, focus shifts to finishing the remaining hardware subsystems
 * Produce `docs/audio_spec.md` that defines the audio architecture: number of channels, noise vs. tone, volume control, sample format, and register map.
 * Specify how audio integrates with the scheduler and bus.
 
-### M26 – Audio Implementation (sub‑milestones)
+### M26 – Audio Implementation (sub-milestones)
 
-1. **M26a – Audio Registers & State:** Implement the audio registers in the bus, including reset behaviour and write semantics.
-2. **M26b – Tone Generators:** Create tone and noise generators according to the spec; integrate with the scheduler.
-3. **M26c – Mixer & Output:** Mix channels into a single PCM output; support both a headless audio dump for tests and real‑time output via SDL.
-4. **M26d – Audio Tests:** Add deterministic unit tests for frequencies, register writes, mixing, and noise behaviour.
+1. **M26a – Audio Registers & State**
+   Implement the CPU-visible audio registers, reset behavior, masking rules, and bus-visible semantics.
+
+2. **M26b – Tone and Noise Generator State Progression**
+   Implement deterministic internal progression for baseline tone and noise generators through an explicit advancement API, with no mixer or host output.
+
+3. **M26c – Audio Mixer and Internal Sample Output State**
+   Implement deterministic per-channel amplitude evaluation, fixed volume lookup behavior, baseline channel mixing, and internal mixed sample generation. No SDL playback in this milestone.
+
+4. **M26d – SDL Audio Output Integration**
+   Connect the existing internal audio sample stream to SDL real-time playback. Keep host wall-clock non-authoritative and preserve scheduler-owned timing.
+
+5. **M26e – Audio Deterministic Validation and Tests**
+   Add deterministic tests and validation coverage for register behavior, generator progression, mixing behavior, silence/mute cases, and SDL integration boundaries where testable.
 
 ### M27 – Platform Validation
 
@@ -72,9 +82,31 @@ With the VDP frozen, focus shifts to finishing the remaining hardware subsystems
 
 Only pursue these if ROM developers or tests reveal a need.  Each would be scoped as its own milestone:
 
+### Future Audio Expansion – YM2151 FM Integration
+
+YM2151 is an approved planned audio expansion beyond the current validated PSG-only platform. PCM playback remains intentionally excluded from the platform design.
+
+1. **M29a – YM2151 Register Interface**
+   Define and implement the CPU-visible YM2151 register/data interface without changing the validated PSG baseline.
+
+2. **M29b – FM Operator and Channel State**
+   Implement deterministic internal operator, envelope, and channel state progression for YM2151 voices.
+
+3. **M29c – YM2151 Timers and IRQ Behavior**
+   Add timer state, status behavior, and IRQ-facing semantics required by the YM2151 contract.
+
+4. **M29d – FM Sample Generation**
+   Implement deterministic FM sample synthesis owned by the scheduler rather than host time.
+
+5. **M29e – Mixer Integration (PSG + YM2151)**
+   Integrate YM2151 output with the existing PSG path while preserving deterministic mixing behavior.
+
+6. **M29f – Deterministic FM Validation**
+   Add deterministic tests and validation coverage for register behavior, timer/IRQ behavior, synthesis, and mixed-output repeatability.
+
 * **Window/HUD Plane:** An overlay plane for HUD elements.
 * **Mid‑frame Palette/Scroll Changes:** For raster effects.
-* **Advanced Audio Features:** Sample playback or FM synthesis.
+* **Advanced Audio Features Beyond YM2151:** Additional audio work only if ROM-driven after the planned YM2151 block; PCM sample playback remains excluded.
 * **Additional VDP Registers:** e.g. sprite‑0 hit flag or scanline interrupts.
 
 The previously planned **Showcase ROM** is intentionally deferred and will be treated as a separate project once the emulator platform is complete.

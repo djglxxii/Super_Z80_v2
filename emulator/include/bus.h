@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "apu.h"
 #include "dma.h"
 #include "io.h"
 #include "irq_controller.h"
@@ -46,6 +47,20 @@ public:
     static constexpr uint8_t kDmaDstHighPort = DMA::kDstHighPort;
     static constexpr uint8_t kDmaLengthPort = DMA::kLengthPort;
     static constexpr uint8_t kDmaControlPort = DMA::kControlPort;
+    static constexpr uint8_t kPad1Port = IO::kPad1Port;
+    static constexpr uint8_t kPad1SysPort = IO::kPad1SysPort;
+    static constexpr uint8_t kAudioToneALowPort = APU::kToneALowPort;
+    static constexpr uint8_t kAudioToneAHighPort = APU::kToneAHighPort;
+    static constexpr uint8_t kAudioToneBLowPort = APU::kToneBLowPort;
+    static constexpr uint8_t kAudioToneBHighPort = APU::kToneBHighPort;
+    static constexpr uint8_t kAudioToneCLowPort = APU::kToneCLowPort;
+    static constexpr uint8_t kAudioToneCHighPort = APU::kToneCHighPort;
+    static constexpr uint8_t kAudioNoiseControlPort = APU::kNoiseControlPort;
+    static constexpr uint8_t kAudioVolumeAPort = APU::kVolumeAPort;
+    static constexpr uint8_t kAudioVolumeBPort = APU::kVolumeBPort;
+    static constexpr uint8_t kAudioVolumeCPort = APU::kVolumeCPort;
+    static constexpr uint8_t kAudioVolumeNoisePort = APU::kVolumeNoisePort;
+    static constexpr uint8_t kAudioControlPort = APU::kControlPort;
 
     Bus();
 
@@ -56,6 +71,8 @@ public:
     void write(uint16_t address, uint8_t value);
     uint8_t read_port(uint8_t port);
     void write_port(uint8_t port, uint8_t value);
+    void set_controller_button(IO::Button button, bool pressed);
+    bool controller_button(IO::Button button) const;
     void request_irq(uint8_t irq_bit);
     bool irq_line() const;
     VDP& vdp();
@@ -64,6 +81,8 @@ public:
     const VBlank& vblank() const;
     DMA& dma();
     const DMA& dma() const;
+    APU& apu();
+    const APU& apu() const;
 
 private:
     static constexpr uint8_t kOpenBusValue = 0xFFU;
@@ -76,6 +95,7 @@ private:
     IO io_;
     IRQController irq_controller_;
     Memory memory_;
+    APU apu_;
     VDP vdp_;
     VBlank vblank_;
     DMA dma_;

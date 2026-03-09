@@ -1,9 +1,66 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M23
+M28
+
+## Audio Status
+Current validated audio implementation:
+- PSG-style APU only
+
+Planned audio expansion:
+- YM2151 FM subsystem
+- scheduled for future M29 milestone block
+
+PCM remains excluded from the platform design.
 
 ## Recent Changes
+- Developer-facing platform documentation added for the implemented hardware model, including a canonical hardware reference plus separate graphics, audio, input, timing, and development workflow guides.
+- The new M28 docs describe the validated platform exactly as implemented: fixed `32 KiB` ROM, `16 KiB` RAM, VDP ports `0xE0-0xED`, controller ports `0xDC-0xDD`, IRQ and DMA ports `0xF0-0xF9`, and the PSG-style audio block on `0xD0-0xDB`.
+- Repository truth now explicitly documents the current platform limits for ROM authors, including the absence of YM2151/FM hardware, the fixed interrupt vector path through `RST 38h`, and SDL shell features as non-authoritative development aids.
+- Platform validation coverage added for full deterministic end-to-end emulator stepping across CPU, DMA, IRQ, VBlank, VDP, controller input, audio, and scheduler-owned timing.
+- New integration tests now verify byte-identical repeated platform snapshots, CPU resume behavior after VBlank IRQ delivery, DMA completion under scheduler stepping, and deterministic input-plus-audio interaction under headless execution.
+- VBlank validation now confirms the scanline 192 boundary, IRQ controller request propagation, and deterministic CPU vector handling without relying on host timing or SDL devices.
+- CMake test wiring now includes dedicated M27 integration executables for platform determinism, CPU/DMA/IRQ interaction, VDP/VBlank IRQ timing, and input/audio repeatability.
+- Deterministic audio validation coverage now includes focused unit tests for register masking/boundaries, mixer lookup-table behavior, noise/LFSR progression, cadence repeatability, headless buffering, and SDL queue boundary checks.
+- New long-running cadence tests verify the scanline accumulator contract directly: `262` scanlines produce `800` samples per frame, `15720` scanlines produce exactly `48000` samples per emulated second, and identical runs remain byte-identical.
+- Buffer-boundary validation now confirms the fixed-capacity core audio ring stops at `4096` samples and latches the existing APU overrun flag without changing synthesis behavior.
+- SDL dummy-driver validation now checks the runtime mono `48000 Hz` signed-16 little-endian contract, queue byte counts, and sample-width assumptions without requiring a real audio device.
+- SDL runtime shell now supports `--sdl-audio`, opening a mono `48000 Hz` signed-16 little-endian SDL audio device and queueing deterministic PCM produced by the emulator core.
+- `EmulatorCore` now owns a bounded headless-first audio sample ring buffer, scanline-driven sample production, and explicit sample-consumption APIs for SDL/frontends without moving timing ownership into SDL.
+- Audio sample generation now follows deterministic integer accumulators for both samples-per-scanline and APU ticks-per-sample, preserving the `docs/audio_spec.md` cadence contract while keeping host playback non-authoritative.
+- Producer-side audio queue overflow now latches the existing APU overrun bit when the fixed-capacity core buffer fills, while underruns remain SDL-local silence at the sink.
+- Audio output integration tests added and passing for initialization, sample handoff, mute/disable silence, headless isolation, and repeatable outgoing sample blocks without requiring a real SDL device.
+- APU now exposes deterministic mono signed-`int16` sample generation through `generate_current_sample()` and `advance_and_generate_sample(tick_count)`, with no SDL device or host-clock dependency.
+- Baseline mixer behavior now maps the 4-bit attenuation registers through the fixed `15..0` lookup table from `docs/audio_spec.md`, sums the four channel contributions, normalizes by `60`, and emits signed 16-bit PCM.
+- Global `AUD_CTRL` enable and mute bits now force deterministic silence exactly as specified while tone/noise runtime state remains scheduler-owned.
+- APU reset-state writes now also clear internal sample output state alongside tone phases, divider counters, the noise LFSR seed, and the overrun flag.
+- Mixer unit tests added and passing for reset silence, single-tone output, volume lookup effects, deterministic noise contribution, multi-channel mixing, full-scale output, repeatability, and mute behavior.
+- APU runtime generator state now tracks deterministic tone divider counters, tone phase bits, a noise divider counter, and a 15-bit noise LFSR behind the existing audio register interface.
+- `APU::advance_audio_ticks(count)` now advances tone and noise generators from explicit caller-owned tick counts only, with no wall-clock or SDL timing dependency.
+- Tone generator progression now reloads from the current 12-bit period registers, toggles phase on divider expiry, treats period `0x000` as silent, and updates future stepping immediately when tone period registers change.
+- Noise generator progression now supports fixed divisors `16`, `32`, and `64` ticks plus `Tone C` divider-event clocking through `AUD_NOISE_CTRL[1:0]`.
+- White-noise mode now advances a deterministic 15-bit LFSR using bits `0` and `1` XOR feedback, while periodic-noise mode shifts toward zero and reseeds to `0x4000` when its cycle completes.
+- Audio control reset-state writes now reinitialize tone phases, tone/noise divider counters, the noise LFSR seed, and the overrun flag while preserving the programmed register values.
+- Generator unit tests added and passing for reset defaults, tone countdown cadence, tone phase toggling, white noise stepping, periodic noise reseeding, Tone-C-coupled noise stepping, register update effects, repeatability, and boundary values.
+- Audio register state storage implemented in `emulator/include/apu.h`, `emulator/include/apu_registers.h`, and `emulator/src/apu.cpp`.
+- Bus port routing now exposes audio ports `0xD0-0xDB` through a dedicated APU device while keeping the audio subsystem silent.
+- Tone high-byte, noise control, volume, and global control writes now mask unused bits exactly as defined in `docs/audio_spec.md`.
+- Audio reset behavior now initializes tone/noise/control registers to `0x00` and all four volume registers to `0x0F`.
+- `AUD_CTRL` bit `2` now behaves as a self-clearing reset-state write, while CPU reads expose only bits `1:0` plus the read-only overrun bit.
+- Audio unit tests added and passing for reset defaults, masked read/write behavior, bus routing, and CPU-visible `IN`/`OUT` semantics on the audio ports.
+- Audio hardware baseline v1 defined in `docs/audio_spec.md` as the authoritative contract for future implementation work.
+- Audio baseline specifies 3 square-wave tone channels, 1 LFSR-based noise channel, mono 16-bit PCM output, and a fixed `48000 Hz` sample rate.
+- CPU-visible audio register ports reserved at `0xD0-0xDB`, including tone period, per-channel volume, noise control, and global audio control semantics.
+- Audio timing contract now explicitly assigns time ownership to the scheduler and forbids host-clock or SDL-callback-driven synthesis.
+- Mixer contract now defines equal-weight summing, deterministic integer normalization, signed 16-bit clamping, and headless-buffer-first integration.
+- Deterministic audio verification strategy documented for future milestones, covering register behavior, tone timing, noise reproducibility, mixer output, and scheduler sample cadence.
+- Controller input hardware implemented for CPU-visible ports `PAD1` (`0xDC`) and `PAD1_SYS` (`0xDD`).
+- PAD1 now reports active-low button state for `Up`, `Down`, `Left`, `Right`, `A`, and `B`, while PAD1_SYS reports active-low `Start`.
+- Default controller idle state is explicitly deterministic: both controller ports read back `0xFF` when no buttons are pressed.
+- Generic I/O port storage now preserves controller ports as read-only hardware views while leaving unrelated ports writable.
+- Bus helpers added so shell-layer code can update controller state without moving host input logic into the core hardware implementation.
+- SDL shell entrypoint now supports `--sdl-input`, mapping keyboard input (`Arrow keys`, `Z`, `X`, `Enter`) and SDL gamepad controls into PAD1/PAD1_SYS state.
+- Controller input unit tests added and passing for idle state, button press/release transitions, simultaneous valid combinations, bus-visible reads, and ignored direct writes to controller ports.
 - VDP baseline documentation added in `docs/vdp_baseline_v1.md` as the authoritative graphics reference for ROM developers.
 - Graphics behavior contract frozen at milestone M23 with no new hardware features added.
 - VDP behavior is now considered stable and must not change without a bug fix, ROM-driven requirement, or explicit hardware contract revision.
@@ -87,7 +144,9 @@ M23
 None yet.
 
 ## Verification Status
-M23 documentation verification passing.
+M28 documentation verification passing: `test -f docs/developer_guide.md`, `test -f docs/hardware_reference.md`, `test -f docs/programming_graphics.md`, `test -f docs/programming_audio.md`, `test -f docs/programming_input.md`, and `test -f docs/platform_timing.md`.
+
+Most recent implementation verification remains the passing M27 run: `cmake -S . -B build`, `cmake --build build`, and `ctest --test-dir build --output-on-failure`. The full suite included `super_z80_test_platform_determinism`, `super_z80_test_cpu_dma_irq_integration`, `super_z80_test_vdp_vblank_irq`, and `super_z80_test_input_audio_integration`, all passing in the shared deterministic headless build.
 
 ## Next Step
-Await the next explicit task packet before changing VDP scope.
+Execute the future `M29a-M29f` YM2151 planning block only when implementation work is explicitly tasked; until then, the validated platform remains PSG-only.

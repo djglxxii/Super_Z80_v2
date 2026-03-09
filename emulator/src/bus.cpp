@@ -16,6 +16,7 @@ void Bus::reset() {
     io_.reset();
     irq_controller_.reset();
     memory_.reset();
+    apu_.reset();
     vdp_.reset();
     vblank_.reset();
     dma_.reset();
@@ -68,6 +69,10 @@ uint8_t Bus::read_port(uint8_t port) {
         return vdp_.read_port(port);
     }
 
+    if (port >= APU::kPortStart && port <= APU::kPortEnd) {
+        return apu_.read_port(port);
+    }
+
     if (port >= kDmaSrcLowPort && port <= kDmaControlPort) {
         return dma_.read_register(port);
     }
@@ -95,12 +100,25 @@ void Bus::write_port(uint8_t port, uint8_t value) {
         return;
     }
 
+    if (port >= APU::kPortStart && port <= APU::kPortEnd) {
+        apu_.write_port(port, value);
+        return;
+    }
+
     if (port >= kDmaSrcLowPort && port <= kDmaControlPort) {
         dma_.write_register(port, value);
         return;
     }
 
     io_.write(port, value);
+}
+
+void Bus::set_controller_button(IO::Button button, bool pressed) {
+    io_.set_button(button, pressed);
+}
+
+bool Bus::controller_button(IO::Button button) const {
+    return io_.button(button);
 }
 
 void Bus::request_irq(uint8_t irq_bit) {
@@ -133,6 +151,14 @@ DMA& Bus::dma() {
 
 const DMA& Bus::dma() const {
     return dma_;
+}
+
+APU& Bus::apu() {
+    return apu_;
+}
+
+const APU& Bus::apu() const {
+    return apu_;
 }
 
 bool Bus::is_rom_address(uint16_t address) {
