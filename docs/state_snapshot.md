@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M34
+M35
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,12 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M35 complete.
+- The Showcase ROM now allocates distinct background and foreground tilemap buffers plus explicit `background_scroll_x`, `background_scroll_y`, `foreground_scroll_x`, and `foreground_scroll_y` state bytes in RAM, keeping the parallax logic obvious and deterministic.
+- The background plane now combines the existing splash tilemap with repeated pattern bands, while the foreground plane uses transparent text banners and labels so both layers remain visible as separate moving surfaces.
+- `showcase_upload_scene_to_vram` now uploads both tilemaps into the existing BG and FG VDP regions, and `showcase_render` writes both sets of layer scroll registers each frame.
+- The parallax demo advances the background layer by `+1/+1` pixels per frame and the foreground layer by `+2/+0`, producing a clearly visible depth effect without adding scene management, sprites, or new assets.
+- Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 10` runs remain byte-identical with the verified `HEADLESS_ROM_RESULT` recorded in `artifacts/reports/m35_parallax_scrolling_demo.md`.
 - M34 complete.
 - The Showcase ROM now keeps deterministic `scroll_x` / `scroll_y` state in RAM, increments both axes once per frame inside `showcase_update`, and writes the current values to the VDP background scroll registers during `showcase_render`.
 - The existing splash tilemap and reusable M31 text composition path now serve as a combined X/Y scrolling Showcase scene, visibly demonstrating vertical scroll register behavior without introducing scene management or changing the asset pipeline.
@@ -228,6 +234,8 @@ PCM remains excluded from the platform design.
 None yet.
 
 ## Verification Status
+M35 parallax scrolling verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `make -C rom/showcase clean`, `make -C rom/showcase`, and repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 10`. The Showcase ROM now verifies successful repository build/test execution, two-layer BG/FG scene upload, independent per-frame layer scroll updates, successful ROM assembly, and stable repeated headless execution for the parallax demo.
+
 M32 system splash screen verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `make -C rom/showcase clean`, `make -C rom/showcase`, and repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 4`. The Showcase ROM now verifies boot-to-splash presentation, correct local splash asset indexing, required reusable-text rendering, successful ROM assembly, and stable repeated headless execution.
 
 M31 font and text rendering verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `make -C rom/showcase clean`, `make -C rom/showcase`, and repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 4`. The Showcase ROM now verifies the reusable text API, local ASCII font mapping, required on-screen validation strings, successful ROM assembly, and stable repeated headless execution.
@@ -257,4 +265,4 @@ M28 documentation verification passing: `test -f docs/developer_guide.md`, `test
 Most recent implementation verification remains the passing M27 run: `cmake -S . -B build`, `cmake --build build`, and `ctest --test-dir build --output-on-failure`. The full suite included `super_z80_test_platform_determinism`, `super_z80_test_cpu_dma_irq_integration`, `super_z80_test_vdp_vblank_irq`, and `super_z80_test_input_audio_integration`, all passing in the shared deterministic headless build.
 
 ## Next Step
-Choose the next explicit task packet. The next planned follow-up is `M33 - Scrolling Tilemap Demo` to add deterministic background movement on top of the current Showcase splash presentation.
+Choose the next explicit task packet. The next planned follow-up is `M36 - Basic Sprite Rendering` to layer deterministic sprite uploads and motion on top of the newly validated parallax Showcase scene.

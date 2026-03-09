@@ -1,7 +1,7 @@
 # Showcase State Snapshot
 
 ## Current Milestone
-M34
+M35
 
 ## Status
 Completed.
@@ -31,13 +31,14 @@ Completed.
 - The local splash tilemap now targets the correct splash tile block in VRAM instead of the font tile range, preserving the intended asset upload order while fixing the previous indexing mismatch.
 - The splash assets now form a centered framed logo block so the ROM presents a clearer startup identity before later scene work exists.
 
-## Scrolling Demo
-- The Showcase ROM now maintains explicit `scroll_x` and `scroll_y` state bytes in RAM and resets them deterministically during initialization.
-- The main loop advances both horizontal and vertical background scroll by one pixel per frame during `showcase_update`, with register writes applied during `showcase_render`.
-- Background movement continues to use the existing splash tilemap and reusable text composition path, so the demo now validates both VDP background scroll axes without adding scene management or changing the asset pipeline.
+## Parallax Scrolling Demo
+- The Showcase ROM now owns separate background and foreground tilemap buffers in RAM plus explicit `background_scroll_x`, `background_scroll_y`, `foreground_scroll_x`, and `foreground_scroll_y` state bytes.
+- Scene composition is split across both planes: the background keeps the splash/logo composition and repeated pattern bands, while the foreground uses transparent text banners and labels so the two layers remain easy to distinguish.
+- `showcase_upload_scene_to_vram` now uploads both tilemaps in sequence to the existing background and foreground VDP tilemap regions instead of leaving the foreground plane blank.
+- The main loop advances the background by `+1/+1` per frame and the foreground by `+2/+0` per frame, then applies both planes' scroll registers during `showcase_render`.
 
 ## Result
-M34 extends the first dynamic Showcase visual behavior into a combined X/Y scroll reference. The ROM now boots into the existing splash composition, then continuously scrolls the background horizontally and vertically through deterministic per-frame VDP register updates while preserving stable repeated headless execution.
+M35 turns the Showcase ROM into a true parallax reference. The ROM now demonstrates distinct background and foreground motion on top of the existing deterministic scroll loop, using only the established local tile assets and current VDP layer hardware.
 
 ## Recommendation
-Proceed to `M35 - Parallax Scrolling Demo`. The next step is validating independent background and foreground motion on top of the now-established deterministic scroll update path.
+Proceed to `M36 - Basic Sprite Rendering`. The next step is introducing sprite attribute uploads and simple sprite motion on top of the now-validated parallax background scene.

@@ -24,8 +24,10 @@ showcase_vdp_init_registers:
 
 showcase_reset_scroll_state:
     xor a
-    ld (SHOWCASE_SCROLL_X), a
-    ld (SHOWCASE_SCROLL_Y), a
+    ld (SHOWCASE_BACKGROUND_SCROLL_X), a
+    ld (SHOWCASE_BACKGROUND_SCROLL_Y), a
+    ld (SHOWCASE_FOREGROUND_SCROLL_X), a
+    ld (SHOWCASE_FOREGROUND_SCROLL_Y), a
     ret
 
 showcase_init_palette:
@@ -55,7 +57,9 @@ showcase_upload_scene_to_vram:
     ld bc, SZ_VDP_TILEMAP_BYTES
     call vdp_upload_block
 
-    call vdp_clear_tilemap
+    ld hl, SHOWCASE_FG_BUFFER
+    ld bc, SZ_VDP_TILEMAP_BYTES
+    call vdp_upload_block
 
     ld bc, SHOWCASE_VRAM_TAIL_CLEAR_BYTES
     call showcase_vdp_clear_bytes
@@ -109,8 +113,12 @@ showcase_vdp_clear_bytes:
     ret
 
 showcase_apply_scroll_registers:
-    ld a, (SHOWCASE_SCROLL_X)
+    ld a, (SHOWCASE_BACKGROUND_SCROLL_X)
     out (SZ_PORT_VDP_BG_SCROLL_X), a
-    ld a, (SHOWCASE_SCROLL_Y)
+    ld a, (SHOWCASE_BACKGROUND_SCROLL_Y)
     out (SZ_PORT_VDP_BG_SCROLL_Y), a
+    ld a, (SHOWCASE_FOREGROUND_SCROLL_X)
+    out (SZ_PORT_VDP_FG_SCROLL_X), a
+    ld a, (SHOWCASE_FOREGROUND_SCROLL_Y)
+    out (SZ_PORT_VDP_FG_SCROLL_Y), a
     ret

@@ -24,12 +24,16 @@ showcase_poll_input:
     ret
 
 showcase_update:
-    ld a, (SHOWCASE_SCROLL_X)
+    ld a, (SHOWCASE_BACKGROUND_SCROLL_X)
     inc a
-    ld (SHOWCASE_SCROLL_X), a
-    ld a, (SHOWCASE_SCROLL_Y)
+    ld (SHOWCASE_BACKGROUND_SCROLL_X), a
+    ld a, (SHOWCASE_BACKGROUND_SCROLL_Y)
     inc a
-    ld (SHOWCASE_SCROLL_Y), a
+    ld (SHOWCASE_BACKGROUND_SCROLL_Y), a
+    ld a, (SHOWCASE_FOREGROUND_SCROLL_X)
+    inc a
+    inc a
+    ld (SHOWCASE_FOREGROUND_SCROLL_X), a
     ret
 
 showcase_render:
