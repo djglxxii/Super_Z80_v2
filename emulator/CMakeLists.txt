@@ -190,6 +190,31 @@ target_link_libraries(super_z80_core
         super_z80_scheduler
 )
 
+if (SDL2_FOUND)
+    add_library(super_z80_sdl_audio_output
+        src/sdl_audio_output.cpp
+    )
+
+    target_compile_definitions(super_z80_sdl_audio_output
+        PRIVATE
+            SUPER_Z80_HAS_SDL
+    )
+
+    target_include_directories(super_z80_sdl_audio_output
+        PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+        PRIVATE
+            ${SDL2_INCLUDE_DIRS}
+    )
+
+    target_link_libraries(super_z80_sdl_audio_output
+        PUBLIC
+            super_z80_core
+        PRIVATE
+            ${SDL2_LIBRARIES}
+    )
+endif ()
+
 add_executable(super_z80
     src/main.cpp
 )
@@ -210,6 +235,7 @@ if (SDL2_FOUND)
     )
     target_link_libraries(super_z80
         PRIVATE
+            super_z80_sdl_audio_output
             ${SDL2_LIBRARIES}
     )
 endif ()
@@ -357,6 +383,12 @@ add_executable(super_z80_test_vdp_vblank_irq
 add_executable(super_z80_test_input_audio_integration
     tests/integration/test_input_audio_integration.cpp
 )
+
+if (SDL2_FOUND)
+    add_executable(super_z80_test_sdl_audio_output
+        tests/unit/test_sdl_audio_output.cpp
+    )
+endif ()
 
 target_link_libraries(super_z80_test_crc32
     PRIVATE
@@ -547,6 +579,28 @@ target_link_libraries(super_z80_test_input_audio_integration
 )
 
 if (SDL2_FOUND)
+    target_compile_definitions(super_z80_test_audio_output_integration
+        PRIVATE
+            SUPER_Z80_HAS_SDL
+    )
+    target_link_libraries(super_z80_test_audio_output_integration
+        PRIVATE
+            super_z80_sdl_audio_output
+            ${SDL2_LIBRARIES}
+    )
+    target_compile_definitions(super_z80_test_sdl_audio_output
+        PRIVATE
+            SUPER_Z80_HAS_SDL
+    )
+    target_include_directories(super_z80_test_sdl_audio_output
+        PRIVATE
+            ${SDL2_INCLUDE_DIRS}
+    )
+    target_link_libraries(super_z80_test_sdl_audio_output
+        PRIVATE
+            super_z80_sdl_audio_output
+            ${SDL2_LIBRARIES}
+    )
     target_compile_definitions(super_z80_test_audio_determinism
         PRIVATE
             SUPER_Z80_HAS_SDL
@@ -598,6 +652,9 @@ add_test(NAME super_z80_test_platform_determinism COMMAND super_z80_test_platfor
 add_test(NAME super_z80_test_cpu_dma_irq_integration COMMAND super_z80_test_cpu_dma_irq_integration)
 add_test(NAME super_z80_test_vdp_vblank_irq COMMAND super_z80_test_vdp_vblank_irq)
 add_test(NAME super_z80_test_input_audio_integration COMMAND super_z80_test_input_audio_integration)
+if (SDL2_FOUND)
+    add_test(NAME super_z80_test_sdl_audio_output COMMAND super_z80_test_sdl_audio_output)
+endif ()
 
 # Keep runtime path simple for milestone verification commands.
 set_target_properties(super_z80 PROPERTIES

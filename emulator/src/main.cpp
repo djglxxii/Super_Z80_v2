@@ -6,6 +6,7 @@
 
 #if defined(SUPER_Z80_HAS_SDL)
 #include <SDL.h>
+#include "sdl_audio_output.h"
 #endif
 
 namespace {
@@ -29,8 +30,7 @@ void print_version() {
 }
 
 #if defined(SUPER_Z80_HAS_SDL)
-constexpr std::size_t kSdlQueueTargetSamples = 2048U;
-constexpr std::size_t kSdlQueueChunkSamples = 512U;
+constexpr std::size_t kSdlOutputChunkSamples = 512U;
 
 void program_demo_tone(EmulatorCore& core) {
     constexpr uint16_t kToneAPeriod = 254U;
@@ -43,33 +43,22 @@ void program_demo_tone(EmulatorCore& core) {
     core.bus().write_port(superz80::Bus::kAudioControlPort, 0x01U);
 }
 
-bool pump_audio_output(EmulatorCore& core, SDL_AudioDeviceID device) {
-    std::array<EmulatorCore::AudioSample, kSdlQueueChunkSamples> chunk = {};
+void pump_audio_output(EmulatorCore& core, superz80::SdlAudioOutput& output) {
+    std::array<EmulatorCore::AudioSample, kSdlOutputChunkSamples> chunk = {};
 
-    while ((SDL_GetQueuedAudioSize(device) / sizeof(EmulatorCore::AudioSample)) < kSdlQueueTargetSamples) {
+    while (output.buffered_samples() < superz80::SdlAudioOutput::kDefaultBufferCapacitySamples / 2U) {
         if (core.available_audio_samples() == 0U) {
             core.step_scanline();
             continue;
         }
 
-        const std::size_t queued_samples =
-            SDL_GetQueuedAudioSize(device) / sizeof(EmulatorCore::AudioSample);
-        const std::size_t available_capacity = kSdlQueueTargetSamples - queued_samples;
-        const std::size_t requested_samples =
-            (available_capacity < chunk.size()) ? available_capacity : chunk.size();
-        const std::size_t copied_samples = core.consume_audio_samples(chunk.data(), requested_samples);
+        const std::size_t copied_samples = core.consume_audio_samples(chunk.data(), chunk.size());
         if (copied_samples == 0U) {
             break;
         }
 
-        if (SDL_QueueAudio(device, chunk.data(),
-                           static_cast<Uint32>(copied_samples * sizeof(EmulatorCore::AudioSample))) != 0) {
-            std::cerr << "SDL audio queue failed: " << SDL_GetError() << std::endl;
-            return false;
-        }
+        output.enqueue_samples(chunk.data(), copied_samples);
     }
-
-    return true;
 }
 
 bool map_keyboard_key(superz80::Bus& bus, const SDL_KeyboardEvent& event) {
@@ -159,7 +148,7 @@ void print_controller_state(superz80::Bus& bus) {
 }
 
 int run_sdl_audio_shell(EmulatorCore& core) {
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         std::cerr << "SDL initialization failed: " << SDL_GetError() << std::endl;
         return 1;
     }
@@ -177,40 +166,17 @@ int run_sdl_audio_shell(EmulatorCore& core) {
         return 1;
     }
 
-    SDL_AudioSpec desired = {};
-    desired.freq = static_cast<int>(superz80::APU::kSampleRateHz);
-    desired.format = AUDIO_S16LSB;
-    desired.channels = 1;
-    desired.samples = 1024U;
-
-    SDL_AudioSpec obtained = {};
-    const SDL_AudioDeviceID device =
-        SDL_OpenAudioDevice(nullptr, 0, &desired, &obtained, 0);
-    if (device == 0U) {
+    superz80::SdlAudioOutput audio_output;
+    if (!audio_output.initialize()) {
         std::cerr << "SDL audio device open failed: " << SDL_GetError() << std::endl;
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
     }
 
-    if (obtained.freq != desired.freq || obtained.format != desired.format || obtained.channels != desired.channels) {
-        std::cerr << "SDL audio device does not support required mono 48 kHz signed-16 little-endian output."
-                  << std::endl;
-        SDL_CloseAudioDevice(device);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
-    }
-
     program_demo_tone(core);
-    if (!pump_audio_output(core, device)) {
-        SDL_CloseAudioDevice(device);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
-    }
-
-    SDL_PauseAudioDevice(device, 0);
+    pump_audio_output(core, audio_output);
+    audio_output.start();
 
     std::cout << "SDL audio shell active. Tone A demo is routed through SDL audio. "
                  "Close the window or press Escape to quit."
@@ -228,15 +194,12 @@ int run_sdl_audio_shell(EmulatorCore& core) {
             }
         }
 
-        if (!pump_audio_output(core, device)) {
-            running = false;
-            break;
-        }
+        pump_audio_output(core, audio_output);
 
         SDL_Delay(1);
     }
 
-    SDL_CloseAudioDevice(device);
+    audio_output.shutdown();
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;

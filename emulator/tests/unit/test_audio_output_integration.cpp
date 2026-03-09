@@ -7,6 +7,10 @@
 #include <iostream>
 #include <vector>
 
+#if defined(SUPER_Z80_HAS_SDL)
+#include "sdl_audio_output.h"
+#endif
+
 namespace {
 
 bool expect_true(const char* name, bool value) {
@@ -127,6 +131,37 @@ int main() {
                      combined_samples_a != repeat_a_samples) && ok;
     ok = expect_true("combined-core-output-differs-from-ym-only-output",
                      combined_samples_a != ym_only_samples_a) && ok;
+
+#if defined(SUPER_Z80_HAS_SDL)
+    EmulatorCore handoff_core;
+    handoff_core.initialize();
+    superz80::testaudio::program_apu_tone(handoff_core.bus(), 0x0002U, 0x00U, 0x01U);
+    const std::vector<EmulatorCore::AudioSample> handoff_samples =
+        superz80::testaudio::collect_core_audio(handoff_core, 16U);
+    superz80::SdlAudioOutput output_buffer(16U);
+    std::vector<EmulatorCore::AudioSample> handoff_readback;
+    handoff_readback.reserve(handoff_samples.size());
+    std::size_t appended_total = 0U;
+    while (appended_total < handoff_samples.size()) {
+        const std::size_t remaining = handoff_samples.size() - appended_total;
+        const std::size_t chunk_size = remaining < 16U ? remaining : 16U;
+        appended_total +=
+            output_buffer.enqueue_samples(handoff_samples.data() + appended_total, chunk_size);
+        std::vector<EmulatorCore::AudioSample> chunk(chunk_size, 0);
+        const std::size_t copied = output_buffer.read_samples_or_silence(chunk.data(), chunk.size());
+        handoff_readback.insert(handoff_readback.end(), chunk.begin(), chunk.begin() + copied);
+    }
+    ok = expect_equal_size("core-to-sdl-buffer-handoff-appends-all-produced-samples",
+                           appended_total, handoff_samples.size()) &&
+         ok;
+    ok = expect_equal_size("core-to-sdl-buffer-handoff-reads-all-produced-samples",
+                           handoff_readback.size(), handoff_samples.size()) &&
+         ok;
+    ok = expect_true("core-to-sdl-buffer-handoff-preserves-sample-order",
+                     handoff_samples == handoff_readback) && ok;
+#else
+    ok = expect_true("core-to-sdl-buffer-handoff-skipped-when-sdl-is-unavailable", true) && ok;
+#endif
 
     return ok ? 0 : 1;
 }

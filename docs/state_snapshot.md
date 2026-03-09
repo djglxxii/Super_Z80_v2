@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M29f
+M29g
 
 ## Audio Status
 Current validated audio implementation:
@@ -14,6 +14,11 @@ Planned audio expansion:
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M29g complete.
+- Added a dedicated SDL-facing `SdlAudioOutput` sink with a bounded FIFO/ring buffer that accepts scheduler-owned mixed `int16_t` samples from `EmulatorCore` and feeds them to SDL through a callback-only consumption path.
+- The SDL callback now consumes already-buffered mono `48000 Hz` signed-16 PCM and emits local silence on underrun without advancing emulator state, preserving scheduler ownership of synthesis and sample timing.
+- The SDL runtime shell now pumps `EmulatorCore` audio into the SDL sink instead of calling `SDL_QueueAudio` directly from the main loop; when the SDL-facing buffer fills, new host-bound samples are dropped while headless core behavior remains unchanged.
+- New SDL sink unit coverage verifies FIFO ordering, silence-on-underflow behavior, the bounded "drop new samples when full" policy, dummy-driver initialization, and core-to-SDL buffer handoff ordering.
 - M29f complete.
 - Added reusable test-only deterministic audio sequence helpers for programming APU/YM2151 state and collecting exact mixed sample vectors from scheduler- and EmulatorCore-owned stepping.
 - Expanded audio validation coverage to prove exact repeatability for silent baseline, APU-only, YM2151-only, and combined PSG+YM paths across the audio mixer, scheduler-owned advancement, direct YM2151 sample generation, and EmulatorCore output consumption.
@@ -51,8 +56,8 @@ PCM remains excluded from the platform design.
 - Deterministic audio validation coverage now includes focused unit tests for register masking/boundaries, mixer lookup-table behavior, noise/LFSR progression, cadence repeatability, headless buffering, and SDL queue boundary checks.
 - New long-running cadence tests verify the scanline accumulator contract directly: `262` scanlines produce `800` samples per frame, `15720` scanlines produce exactly `48000` samples per emulated second, and identical runs remain byte-identical.
 - Buffer-boundary validation now confirms the fixed-capacity core audio ring stops at `4096` samples and latches the existing APU overrun flag without changing synthesis behavior.
-- SDL dummy-driver validation now checks the runtime mono `48000 Hz` signed-16 little-endian contract, queue byte counts, and sample-width assumptions without requiring a real audio device.
-- SDL runtime shell now supports `--sdl-audio`, opening a mono `48000 Hz` signed-16 little-endian SDL audio device and queueing deterministic PCM produced by the emulator core.
+- SDL dummy-driver validation now checks the runtime mono `48000 Hz` signed-16 little-endian contract plus the SDL sink initialization path without requiring a real audio device.
+- SDL runtime shell now supports `--sdl-audio`, opening a mono `48000 Hz` signed-16 little-endian SDL audio device whose callback consumes deterministic PCM buffered ahead of time by the emulator core.
 - `EmulatorCore` now owns a bounded headless-first audio sample ring buffer, scanline-driven sample production, and explicit sample-consumption APIs for SDL/frontends without moving timing ownership into SDL.
 - Audio sample generation now follows deterministic integer accumulators for both samples-per-scanline and APU ticks-per-sample, preserving the `docs/audio_spec.md` cadence contract while keeping host playback non-authoritative.
 - Producer-side audio queue overflow now latches the existing APU overrun bit when the fixed-capacity core buffer fills, while underruns remain SDL-local silence at the sink.
@@ -171,6 +176,8 @@ PCM remains excluded from the platform design.
 None yet.
 
 ## Verification Status
+M29g SDL audio output integration is passing with the deterministic build/test flow: `cmake -S . -B build`, `cmake --build build --target super_z80_test_sdl_audio_output super_z80_test_audio_output_integration super_z80_test_audio_determinism super_z80_test_scheduler`, `ctest --test-dir build --output-on-failure --tests-regex "super_z80_test_(sdl_audio_output|audio_output_integration|audio_determinism|scheduler)"`, `cmake --build build`, and `ctest --test-dir build --output-on-failure`. The focused coverage now verifies SDL sink FIFO order, silence-on-underflow, bounded-buffer drop policy, dummy-driver initialization, preserved core-to-sink sample ordering, and unchanged deterministic mixed-output behavior.
+
 M29f deterministic audio validation is passing with the deterministic build/test flow: `cmake -S . -B build`, `cmake --build build --target super_z80_test_audio_mixer super_z80_test_scheduler super_z80_test_audio_output_integration super_z80_test_audio_determinism super_z80_test_ym2151`, `ctest --test-dir build --output-on-failure --tests-regex "super_z80_test_(audio_mixer|scheduler|audio_output_integration|audio_determinism|ym2151)"`, `cmake --build build`, and `ctest --test-dir build --output-on-failure`. The expanded coverage now verifies exact mixed-sample repeatability for silent baseline, APU-only, YM2151-only, combined output, fixed scripted scheduler stepping, direct YM2151 sample sequences, and EmulatorCore mixed-output consumption.
 
 M29e audio mixer verification is passing with the deterministic build/test flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure --tests-regex "super_z80_test_(audio_mixer|scheduler|audio_output_integration|audio_determinism|ym2151)"`, and `ctest --test-dir build --output-on-failure`. The new `super_z80_test_audio_mixer` coverage verifies scheduler-facing PSG/YM additive mixing, clamp behavior, and deterministic repeatability, while the focused regression run confirms the mixed output path preserves scheduler, YM2151, and core audio behavior.
@@ -188,4 +195,4 @@ M28 documentation verification passing: `test -f docs/developer_guide.md`, `test
 Most recent implementation verification remains the passing M27 run: `cmake -S . -B build`, `cmake --build build`, and `ctest --test-dir build --output-on-failure`. The full suite included `super_z80_test_platform_determinism`, `super_z80_test_cpu_dma_irq_integration`, `super_z80_test_vdp_vblank_irq`, and `super_z80_test_input_audio_integration`, all passing in the shared deterministic headless build.
 
 ## Next Step
-Execute `M29g` to connect the already-validated scheduler-owned mixed sample stream to SDL playback without changing internal timing ownership, synthesis behavior, or deterministic sample generation.
+Choose the next explicit task packet. A likely follow-up is reconciling `docs/plan.md` with the completed post-`M29f` SDL host-output milestone sequence.
