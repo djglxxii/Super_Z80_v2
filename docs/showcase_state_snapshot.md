@@ -1,7 +1,7 @@
 # Showcase State Snapshot
 
 ## Current Milestone
-M31
+M32
 
 ## Status
 Completed.
@@ -24,10 +24,15 @@ Completed.
 - `rom/showcase/src/text.asm` now provides a reusable tile-text API for the Showcase ROM with explicit tile-coordinate entry points, deterministic row clearing, and zero-terminated ASCII string writes into the background tilemap buffer.
 - Printable ASCII bytes map directly onto the checked-in local `8x8` font asset, while unsupported characters map deterministically to the blank tile.
 - The string writer now supports multi-line text through newline handling without introducing implicit cursor state.
-- The validation scene now renders `SUPER Z80 SHOWCASE` and `FONT AND TEXT OK` through the reusable text path at intentional tile positions.
+- The splash scene now renders `SUPER Z80 SHOWCASE` and `SYSTEM SPLASH OK` through the reusable text path at intentional tile positions.
+
+## System Splash Screen
+- `showcase_init` now boots directly into a dedicated system splash composition step before the initial VRAM upload.
+- The local splash tilemap now targets the correct splash tile block in VRAM instead of the font tile range, preserving the intended asset upload order while fixing the previous indexing mismatch.
+- The splash assets now form a centered framed logo block so the ROM presents a clearer startup identity before later scene work exists.
 
 ## Result
-M31 establishes the first real reusable text layer for the Showcase ROM. The ROM now assembles against its local font assets, writes deterministic ASCII text into the tilemap through explicit helper entry points, visibly renders the milestone validation text, and preserves stable repeated headless execution.
+M32 establishes the first intentional Showcase boot presentation. The ROM now boots into a deterministic static splash that combines local splash art with the reusable text layer, clearly demonstrates the asset upload flow, and preserves stable repeated headless execution.
 
 ## Recommendation
-Proceed to `M32 - System Splash Screen`. The next step is using the new text layer as part of a more intentional splash presentation without expanding into menus or broader UI systems yet.
+Proceed to `M33 - Scrolling Tilemap Demo`. The next step is adding controlled background movement on top of the now-stable splash composition path without expanding into menus or scene management yet.

@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M31
+M32
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,10 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M32 complete.
+- The Showcase ROM now boots into a deterministic system splash that combines the local splash tile/tilemap assets with the reusable M31 text path to render `SUPER Z80 SHOWCASE` and `SYSTEM SPLASH OK`.
+- Fixed a real Showcase integration defect where the splash tilemap referenced raw low tile indices even though the splash assets are uploaded after the font block; the tilemap now targets the correct splash tile base in VRAM.
+- Updated the local splash asset set and layout so the ROM presents a clearer centered startup graphic while preserving the existing simple init path and static deterministic behavior.
 - M31 complete.
 - Replaced the Showcase ROM's hardcoded offset-based line writer with a reusable tile-text layer in `rom/showcase/src/text.asm` that writes zero-terminated ASCII strings by tile X/Y position into the background tilemap buffer.
 - The Showcase text path now clears lines deterministically, maps printable ASCII directly onto the local `rom/showcase/assets/font_8x8.asm` tile set, and treats unsupported characters as blank tiles.
@@ -216,6 +220,8 @@ PCM remains excluded from the platform design.
 None yet.
 
 ## Verification Status
+M32 system splash screen verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `make -C rom/showcase clean`, `make -C rom/showcase`, and repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 4`. The Showcase ROM now verifies boot-to-splash presentation, correct local splash asset indexing, required reusable-text rendering, successful ROM assembly, and stable repeated headless execution.
+
 M31 font and text rendering verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `make -C rom/showcase clean`, `make -C rom/showcase`, and repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 4`. The Showcase ROM now verifies the reusable text API, local ASCII font mapping, required on-screen validation strings, successful ROM assembly, and stable repeated headless execution.
 
 M30 Showcase ROM scaffold verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `make -C rom/showcase`, and repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 4`. The new scaffold now verifies the canonical Showcase project layout, local asset ownership, successful ROM assembly into `rom/showcase/build/showcase.bin`, deterministic SDK-runtime boot, and stable repeated headless execution of the scaffolded main loop.
@@ -243,4 +249,4 @@ M28 documentation verification passing: `test -f docs/developer_guide.md`, `test
 Most recent implementation verification remains the passing M27 run: `cmake -S . -B build`, `cmake --build build`, and `ctest --test-dir build --output-on-failure`. The full suite included `super_z80_test_platform_determinism`, `super_z80_test_cpu_dma_irq_integration`, `super_z80_test_vdp_vblank_irq`, and `super_z80_test_input_audio_integration`, all passing in the shared deterministic headless build.
 
 ## Next Step
-Choose the next explicit task packet. The next planned follow-up is `M29j - SDK Integration Validation` to boot a minimal Showcase-oriented ROM through the new SDK runtime path.
+Choose the next explicit task packet. The next planned follow-up is `M33 - Scrolling Tilemap Demo` to add deterministic background movement on top of the current Showcase splash presentation.

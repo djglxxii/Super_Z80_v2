@@ -1,3 +1,5 @@
+showcase_splash_tile_base EQU showcase_font_8x8_tile_count
+
 showcase_splash_tilemap:
     INCLUDE "assets/splash_tilemap.asm"
 showcase_splash_tilemap_end:
@@ -8,7 +10,7 @@ showcase_text_ascii_after   EQU $80
 showcase_text_newline       EQU $0A
 showcase_text_blank_tile    EQU $00
 
-showcase_prepare_bg_tilemap:
+showcase_compose_system_splash:
     ld hl, SHOWCASE_BG_BUFFER
     ld de, SHOWCASE_BG_BUFFER + 1
     xor a
@@ -114,4 +116,4 @@ showcase_title_text:
     db "SUPER Z80 SHOWCASE", 0
 
 showcase_status_text:
-    db "FONT AND TEXT OK", 0
+    db "SYSTEM SPLASH OK", 0
