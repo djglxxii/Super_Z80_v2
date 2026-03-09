@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M33
+M34
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,10 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M34 complete.
+- The Showcase ROM now keeps deterministic `scroll_x` / `scroll_y` state in RAM, increments both axes once per frame inside `showcase_update`, and writes the current values to the VDP background scroll registers during `showcase_render`.
+- The existing splash tilemap and reusable M31 text composition path now serve as a combined X/Y scrolling Showcase scene, visibly demonstrating vertical scroll register behavior without introducing scene management or changing the asset pipeline.
+- Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 8` runs remain byte-identical with the verified `HEADLESS_ROM_RESULT` recorded in `artifacts/reports/m34_vertical_scrolling_demo.md`.
 - M33 complete.
 - The Showcase ROM now keeps deterministic `scroll_x` / `scroll_y` state in RAM, increments horizontal scroll once per frame inside `showcase_update`, and writes the current values to the VDP background scroll registers during `showcase_render`.
 - The existing splash tilemap and reusable M31 text composition path now serve as the first dynamic Showcase scene, visibly moving across frames without introducing scene management or changing the asset pipeline.

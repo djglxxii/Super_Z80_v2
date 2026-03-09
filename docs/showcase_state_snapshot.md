@@ -1,7 +1,7 @@
 # Showcase State Snapshot
 
 ## Current Milestone
-M33
+M34
 
 ## Status
 Completed.
@@ -33,11 +33,11 @@ Completed.
 
 ## Scrolling Demo
 - The Showcase ROM now maintains explicit `scroll_x` and `scroll_y` state bytes in RAM and resets them deterministically during initialization.
-- The main loop now advances horizontal background scroll by one pixel per frame during `showcase_update`, with register writes applied during `showcase_render`.
-- Background movement uses the existing splash tilemap and text composition path, so the demo validates real VDP scroll register behavior without adding scene management or asset-pipeline changes.
+- The main loop advances both horizontal and vertical background scroll by one pixel per frame during `showcase_update`, with register writes applied during `showcase_render`.
+- Background movement continues to use the existing splash tilemap and reusable text composition path, so the demo now validates both VDP background scroll axes without adding scene management or changing the asset pipeline.
 
 ## Result
-M33 establishes the first dynamic Showcase visual behavior. The ROM now boots into the existing splash composition, then continuously scrolls the background through deterministic per-frame VDP register updates while preserving stable repeated headless execution.
+M34 extends the first dynamic Showcase visual behavior into a combined X/Y scroll reference. The ROM now boots into the existing splash composition, then continuously scrolls the background horizontally and vertically through deterministic per-frame VDP register updates while preserving stable repeated headless execution.
 
 ## Recommendation
-Proceed to `M34 - Sprite Rendering Demo`. The next step is validating sprite attribute upload and sprite visibility on top of the now-scrolling background scene.
+Proceed to `M35 - Parallax Scrolling Demo`. The next step is validating independent background and foreground motion on top of the now-established deterministic scroll update path.

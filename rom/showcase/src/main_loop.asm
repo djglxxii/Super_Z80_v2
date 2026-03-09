@@ -27,6 +27,9 @@ showcase_update:
     ld a, (SHOWCASE_SCROLL_X)
     inc a
     ld (SHOWCASE_SCROLL_X), a
+    ld a, (SHOWCASE_SCROLL_Y)
+    inc a
+    ld (SHOWCASE_SCROLL_Y), a
     ret
 
 showcase_render:
