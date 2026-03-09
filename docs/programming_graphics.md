@@ -22,14 +22,14 @@ Pattern banks:
 The visible playfield is exactly one tilemap wide and high: `256 x 192`.
 
 ## VRAM Programming Model
-- Port `0xE1` is only a stored control byte in the current implementation.
+- Port `0xE1` loads the VRAM pointer when software writes the low byte first, then the high byte.
 - VRAM reads and writes happen through port `0xE2`.
 - Each `0xE2` access uses the current internal VRAM pointer, then auto-increments it.
-- The internal VRAM pointer resets to `0x0000` and cannot currently be reloaded from software.
+- The internal VRAM pointer resets to `0x0000` and can be reloaded from software through `0xE1`.
 
 Practical implication:
 - Sequential VRAM streaming from reset works.
-- Random-access VRAM updates are not exposed as a stable CPU-visible feature yet, so ROM code should treat the current VDP data path as sequential from reset unless a future milestone adds explicit pointer-load semantics.
+- ROM code can also perform targeted VRAM updates by reloading the pointer through `0xE1` before streaming bytes through `0xE2`.
 
 ## Palette Usage
 - Select an entry through `0xE3`.

@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M35
+M36
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,12 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M36 complete.
+- The Showcase ROM now includes a local `8x8` sprite tile asset, deterministic `sprite_x` / `sprite_y` RAM state, and a render path that rewrites sprite attribute table entry `0` each frame.
+- The parallax Showcase scene now demonstrates a high-priority sprite moving `+1` pixel horizontally per frame while the background and foreground layers continue their existing independent scroll rates.
+- `showcase_upload_scene_to_vram` now uploads the sprite pattern tile and explicitly targets the BG tilemap, FG tilemap, and SAT VRAM bases through the VDP address helper instead of relying on reset-only sequential streaming.
+- The VDP control port now supports low-byte then high-byte VRAM pointer loads, resolving the previous ROM-side defect that blocked deterministic SAT updates after boot while preserving existing control-port readback behavior.
+- Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 12` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xDBDAA92D ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
 - M35 complete.
 - The Showcase ROM now allocates distinct background and foreground tilemap buffers plus explicit `background_scroll_x`, `background_scroll_y`, `foreground_scroll_x`, and `foreground_scroll_y` state bytes in RAM, keeping the parallax logic obvious and deterministic.
 - The background plane now combines the existing splash tilemap with repeated pattern bands, while the foreground plane uses transparent text banners and labels so both layers remain visible as separate moving surfaces.
@@ -234,6 +240,8 @@ PCM remains excluded from the platform design.
 None yet.
 
 ## Verification Status
+M36 basic sprite rendering verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `make -C rom/showcase clean`, `make -C rom/showcase`, and repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 12`. The Showcase ROM now verifies successful repository build/test execution, explicit VRAM base uploads, stable per-frame SAT updates, visible sprite motion over the parallax scene, successful ROM assembly, and stable repeated headless execution for the sprite demo.
+
 M35 parallax scrolling verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `make -C rom/showcase clean`, `make -C rom/showcase`, and repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 10`. The Showcase ROM now verifies successful repository build/test execution, two-layer BG/FG scene upload, independent per-frame layer scroll updates, successful ROM assembly, and stable repeated headless execution for the parallax demo.
 
 M32 system splash screen verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `make -C rom/showcase clean`, `make -C rom/showcase`, and repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 4`. The Showcase ROM now verifies boot-to-splash presentation, correct local splash asset indexing, required reusable-text rendering, successful ROM assembly, and stable repeated headless execution.

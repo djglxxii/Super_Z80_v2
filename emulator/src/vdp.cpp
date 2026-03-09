@@ -19,8 +19,10 @@ VDP::VDP()
       sprite_mask_{},
       palette_{},
       vram_ptr_(0U),
+      control_address_low_(0U),
       palette_index_(0U),
       control_reg_(0U),
+      control_address_latch_low_(false),
       bg_scroll_x_(0U),
       bg_scroll_y_(0U),
       fg_scroll_x_(0U),
@@ -40,8 +42,10 @@ void VDP::reset() {
     std::fill(sprite_mask_.begin(), sprite_mask_.end(), 0x00U);
     std::fill(palette_.begin(), palette_.end(), kPaletteResetValue);
     vram_ptr_ = 0U;
+    control_address_low_ = 0x00U;
     palette_index_ = 0U;
     control_reg_ = 0x00U;
+    control_address_latch_low_ = false;
     bg_scroll_x_ = 0x00U;
     bg_scroll_y_ = 0x00U;
     fg_scroll_x_ = 0x00U;
@@ -119,6 +123,14 @@ uint8_t VDP::read_port(uint8_t port) {
 void VDP::write_port(uint8_t port, uint8_t value) {
     if (port == kControlPort) {
         control_reg_ = value;
+        if (!control_address_latch_low_) {
+            control_address_low_ = value;
+            control_address_latch_low_ = true;
+        } else {
+            vram_ptr_ = static_cast<uint16_t>((static_cast<uint16_t>(value) << 8U) |
+                                              static_cast<uint16_t>(control_address_low_));
+            control_address_latch_low_ = false;
+        }
         return;
     }
 

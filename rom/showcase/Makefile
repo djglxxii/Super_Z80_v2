@@ -15,6 +15,7 @@ INCLUDE_FILES := \
 	inc/vdp_helpers.inc
 
 ASSET_FILES := \
+	assets/demo_sprite.asm \
 	assets/font_8x8.asm \
 	assets/splash_tiles.asm \
 	assets/splash_tilemap.asm

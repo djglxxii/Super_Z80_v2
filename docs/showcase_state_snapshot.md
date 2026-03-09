@@ -1,7 +1,7 @@
 # Showcase State Snapshot
 
 ## Current Milestone
-M35
+M36
 
 ## Status
 Completed.
@@ -37,8 +37,15 @@ Completed.
 - `showcase_upload_scene_to_vram` now uploads both tilemaps in sequence to the existing background and foreground VDP tilemap regions instead of leaving the foreground plane blank.
 - The main loop advances the background by `+1/+1` per frame and the foreground by `+2/+0` per frame, then applies both planes' scroll registers during `showcase_render`.
 
+## Basic Sprite Rendering
+- The Showcase ROM now includes a local `8x8` sprite tile asset plus deterministic `sprite_x` and `sprite_y` RAM state initialized during boot.
+- `showcase_upload_scene_to_vram` now uploads that sprite tile into pattern memory, and `showcase_render` rewrites SAT entry `0` each frame with the current Y/X/tile/flags bytes.
+- The sprite uses high priority so it remains visible above the moving foreground text while the background and foreground parallax motion continue unchanged.
+- `showcase_update` now advances the sprite horizontally by `+1` pixel per frame, producing visible screen-space motion independent from the layer scroll registers.
+- The Showcase VDP helper now loads the VRAM pointer through the control port, fixing the prior ROM-side defect that prevented deterministic SAT updates after boot.
+
 ## Result
-M35 turns the Showcase ROM into a true parallax reference. The ROM now demonstrates distinct background and foreground motion on top of the existing deterministic scroll loop, using only the established local tile assets and current VDP layer hardware.
+M36 turns the Showcase ROM into a sprite-capable reference scene. The ROM now demonstrates a moving high-priority sprite on top of the validated parallax background, using deterministic SAT updates and a minimal real VRAM pointer-load contract.
 
 ## Recommendation
-Proceed to `M36 - Basic Sprite Rendering`. The next step is introducing sprite attribute uploads and simple sprite motion on top of the now-validated parallax background scene.
+Proceed to `M37 - Sprite Animation`. The next step is adding animation frame switching on top of the now-validated single-sprite SAT and motion path.

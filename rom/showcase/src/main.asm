@@ -17,6 +17,3 @@ sdk_main:
     INCLUDE "src/vdp_init.asm"
     INCLUDE "src/text.asm"
     INCLUDE "src/main_loop.asm"
-
-    ASSERT SHOWCASE_PATTERN_PADDING_BYTES >= 0
-    ASSERT SHOWCASE_VRAM_TAIL_CLEAR_BYTES >= 0

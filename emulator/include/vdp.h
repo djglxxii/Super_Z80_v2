@@ -102,8 +102,10 @@ private:
     std::array<uint8_t, kFramebufferSize> sprite_mask_;
     std::array<uint32_t, kPaletteEntryCount> palette_;
     uint16_t vram_ptr_;
+    uint8_t control_address_low_;
     uint8_t palette_index_;
     uint8_t control_reg_;
+    bool control_address_latch_low_;
     uint8_t bg_scroll_x_;
     uint8_t bg_scroll_y_;
     uint8_t fg_scroll_x_;

@@ -182,19 +182,19 @@ showcase_title_text:
     db "SUPER Z80 SHOWCASE", 0
 
 showcase_status_text:
-    db "PARALLAX SCROLL OK", 0
+    db "SPRITE RENDER OK", 0
 
 showcase_background_label_text:
     db "BG X1 Y1", 0
 
 showcase_foreground_label_text:
-    db "FG X2 Y0", 0
+    db "FG X2 Y0 TOP", 0
 
 showcase_fg_banner_top_text:
-    db "== FG LAYER MOVES X2 ==", 0
+    db "== SPRITE STAYS SCREEN-SPACE ==", 0
 
 showcase_fg_banner_bottom_text:
-    db "-- PARALLAX REFERENCE OK --", 0
+    db "-- PARALLAX + SPRITE OK --", 0
 
 showcase_bg_band_top_text:
     db ". + . + . + . + . + . + . + .", 0

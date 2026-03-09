@@ -34,8 +34,12 @@ showcase_update:
     inc a
     inc a
     ld (SHOWCASE_FOREGROUND_SCROLL_X), a
+    ld a, (SHOWCASE_SPRITE_X)
+    inc a
+    ld (SHOWCASE_SPRITE_X), a
     ret
 
 showcase_render:
     call showcase_apply_scroll_registers
+    call showcase_render_sprite
     ret

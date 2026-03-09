@@ -10,6 +10,11 @@ showcase_splash_tiles:
     INCLUDE "assets/splash_tiles.asm"
 showcase_splash_tiles_end:
 showcase_splash_tile_count EQU (showcase_splash_tiles_end - showcase_splash_tiles) / 64
+showcase_demo_sprite_tile_base EQU showcase_font_8x8_tile_count + showcase_splash_tile_count
+showcase_demo_sprite_tiles:
+    INCLUDE "assets/demo_sprite.asm"
+showcase_demo_sprite_tiles_end:
+showcase_demo_sprite_tile_count EQU (showcase_demo_sprite_tiles_end - showcase_demo_sprite_tiles) / 64
 
 showcase_vdp_init_registers:
     xor a
@@ -30,12 +35,20 @@ showcase_reset_scroll_state:
     ld (SHOWCASE_FOREGROUND_SCROLL_Y), a
     ret
 
+showcase_reset_sprite_state:
+    ld a, SHOWCASE_SPRITE_START_X
+    ld (SHOWCASE_SPRITE_X), a
+    ld a, SHOWCASE_SPRITE_START_Y
+    ld (SHOWCASE_SPRITE_Y), a
+    ret
+
 showcase_init_palette:
     SZ_VDP_SET_PALETTE_RGBA 0, $08, $0C, $20, $FF
     SZ_VDP_SET_PALETTE_RGBA 1, $E8, $F0, $FF, $FF
     SZ_VDP_SET_PALETTE_RGBA 2, $FF, $C0, $40, $FF
     SZ_VDP_SET_PALETTE_RGBA 3, $20, $80, $E0, $FF
     SZ_VDP_SET_PALETTE_RGBA 4, $70, $24, $44, $FF
+    SZ_VDP_SET_PALETTE_RGBA 5, $F8, $48, $54, $FF
     ret
 
 showcase_upload_scene_to_vram:
@@ -50,26 +63,37 @@ showcase_upload_scene_to_vram:
     ld bc, showcase_splash_tiles_end - showcase_splash_tiles
     call vdp_upload_block
 
-    ld bc, SHOWCASE_PATTERN_PADDING_BYTES
-    call showcase_vdp_clear_bytes
-
+    ld hl, SZ_VDP_BG_TILEMAP_BASE
+    call vdp_set_address
     ld hl, SHOWCASE_BG_BUFFER
     ld bc, SZ_VDP_TILEMAP_BYTES
     call vdp_upload_block
 
+    ld hl, SZ_VDP_FG_TILEMAP_BASE
+    call vdp_set_address
     ld hl, SHOWCASE_FG_BUFFER
     ld bc, SZ_VDP_TILEMAP_BYTES
     call vdp_upload_block
 
-    ld bc, SHOWCASE_VRAM_TAIL_CLEAR_BYTES
+    ld hl, showcase_demo_sprite_tile_base * SZ_VDP_TILE_BYTES
+    call vdp_set_address
+    ld hl, showcase_demo_sprite_tiles
+    ld bc, showcase_demo_sprite_tiles_end - showcase_demo_sprite_tiles
+    call vdp_upload_block
+
+    ld hl, SZ_VDP_SAT_BASE
+    call vdp_set_address
+    ld bc, $0100
     call showcase_vdp_clear_bytes
     ret
 
 vdp_set_address:
-    ; The current VDP contract only exposes sequential writes from reset.
-    ; Track the requested address in RAM so later milestones can reuse the
-    ; helper surface without changing callers.
+    ; The control port loads the VRAM pointer as low byte then high byte.
     ld (SHOWCASE_VRAM_CURSOR), hl
+    ld a, l
+    out (SZ_PORT_VDP_CONTROL), a
+    ld a, h
+    out (SZ_PORT_VDP_CONTROL), a
     ret
 
 vdp_write_vram:
@@ -121,4 +145,17 @@ showcase_apply_scroll_registers:
     out (SZ_PORT_VDP_FG_SCROLL_X), a
     ld a, (SHOWCASE_FOREGROUND_SCROLL_Y)
     out (SZ_PORT_VDP_FG_SCROLL_Y), a
+    ret
+
+showcase_render_sprite:
+    ld hl, SZ_VDP_SAT_BASE
+    call vdp_set_address
+    ld a, (SHOWCASE_SPRITE_Y)
+    call vdp_write_vram
+    ld a, (SHOWCASE_SPRITE_X)
+    call vdp_write_vram
+    ld a, showcase_demo_sprite_tile_base
+    call vdp_write_vram
+    ld a, SHOWCASE_SPRITE_FLAGS
+    call vdp_write_vram
     ret

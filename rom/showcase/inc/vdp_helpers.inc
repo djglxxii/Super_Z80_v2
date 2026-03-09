@@ -1,3 +1,3 @@
 ; Showcase VDP helper contract.
-; `vdp_set_address` currently tracks a software shadow only because the
-; frozen VDP interface still exposes sequential VRAM access from reset.
+; `vdp_set_address` loads the VRAM pointer by writing low byte then high
+; byte to the VDP control port and keeps a RAM shadow for callers.

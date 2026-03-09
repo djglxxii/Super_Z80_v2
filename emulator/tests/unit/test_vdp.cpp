@@ -94,6 +94,15 @@ int main() {
     ok = expect_equal_u16("reset-clears-vram-pointer", vdp.vram_pointer(), 0x0000U) && ok;
 
     vdp.reset();
+    vdp.write_port(superz80::VDP::kControlPort, 0x34U);
+    ok = expect_equal_u16("single-control-write-does-not-move-vram-pointer", vdp.vram_pointer(), 0x0000U) && ok;
+    vdp.write_port(superz80::VDP::kControlPort, 0x12U);
+    ok = expect_equal_u16("two-control-writes-load-vram-pointer", vdp.vram_pointer(), 0x1234U) && ok;
+    vdp.write_port(superz80::VDP::kDataPort, 0x6BU);
+    ok = expect_equal_u8("data-write-uses-loaded-vram-pointer", vdp.vram(0x1234U), 0x6BU) && ok;
+    ok = expect_equal_u16("data-write-advances-loaded-vram-pointer", vdp.vram_pointer(), 0x1235U) && ok;
+
+    vdp.reset();
     for (uint32_t scanline = 1U; scanline <= superz80::VDP::kFrameReadyScanline; ++scanline) {
         vdp.step_scanline(scanline);
     }
