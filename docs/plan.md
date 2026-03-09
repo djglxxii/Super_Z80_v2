@@ -78,31 +78,33 @@ With the VDP frozen, focus shifts to finishing the remaining hardware subsystems
 
 ---
 
-## Phase 3 – Future Extensions (Optional)
+## Phase 3 – Audio Expansion Reconciliation (Completed)
 
-Only pursue these if ROM developers or tests reveal a need.  Each would be scoped as its own milestone:
+The YM2151 expansion block is now implemented and validated. The milestone sequence below reflects repository truth rather than the earlier PSG-only planning state.
 
-### Future Audio Expansion – YM2151 FM Integration
+### M29 – YM2151 FM Audio Expansion
 
-YM2151 is an approved planned audio expansion beyond the current validated PSG-only platform. PCM playback remains intentionally excluded from the platform design.
+#### FM / Audio Hardware and Validation
 
-1. **M29a – YM2151 Register Interface**
-   Define and implement the CPU-visible YM2151 register/data interface without changing the validated PSG baseline.
+- **M29a – YM2151 Register Interface**
+- **M29b – YM2151 Operator and Channel State Model**
+- **M29c – YM2151 Timers, Status Bits, and IRQ Behavior**
+- **M29d – YM2151 FM Sample Generation**
+- **M29e – PSG + YM2151 Mixer Integration**
+- **M29f – Deterministic FM / Audio Validation**
 
-2. **M29b – FM Operator and Channel State**
-   Implement deterministic internal operator, envelope, and channel state progression for YM2151 voices.
+#### Host Platform Integration
 
-3. **M29c – YM2151 Timers and IRQ Behavior**
-   Add timer state, status behavior, and IRQ-facing semantics required by the YM2151 contract.
+- **M29g – SDL Audio Output Integration**
 
-4. **M29d – FM Sample Generation**
-   Implement deterministic FM sample synthesis owned by the scheduler rather than host time.
+M29g is a host-platform milestone.
+It exposes the already-produced emulator audio stream to SDL and does not redefine emulator hardware behavior.
 
-5. **M29e – Mixer Integration (PSG + YM2151)**
-   Integrate YM2151 output with the existing PSG path while preserving deterministic mixing behavior.
+PCM remains excluded from the platform design.
 
-6. **M29f – Deterministic FM Validation**
-   Add deterministic tests and validation coverage for register behavior, timer/IRQ behavior, synthesis, and mixed-output repeatability.
+## Phase 4 – Future Extensions (Optional)
+
+Only pursue these if ROM developers or tests reveal a need. Each would be scoped as its own milestone.
 
 * **Window/HUD Plane:** An overlay plane for HUD elements.
 * **Mid‑frame Palette/Scroll Changes:** For raster effects.

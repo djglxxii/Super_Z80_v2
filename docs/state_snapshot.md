@@ -7,9 +7,31 @@ M29g
 Current validated audio implementation:
 - PSG-style APU plus YM2151 FM audio mixed into the platform sample stream
 
-Planned audio expansion:
-- YM2151 FM subsystem register interface, deterministic internal channel/operator state, timer/status/IRQ-facing behavior, internal deterministic mono FM sample generation, and deterministic mixed-output integration implemented on ports `0x70-0x71`
-- the scheduler now owns PSG/YM sample mixing before samples enter the existing headless/SDL-facing platform output path
+YM2151 FM expansion is implemented on ports `0x70-0x71`.
+- deterministic register interface, operator/channel state, timer/status/IRQ-facing behavior, FM sample generation, and mixed-output integration are complete
+- the scheduler owns PSG/YM sample mixing before samples enter the existing headless or SDL-facing platform output path
+
+Audio Progress
+
+Completed:
+- M26a — Audio Registers & State
+- M26b — Audio Tone and Noise Generator State Progression
+- M26c — Audio Mixer and Internal Sample Output State
+- M26d — SDL Audio Output Integration
+- M26e — Audio Deterministic Validation and Tests
+
+YM2151 / FM Expansion Completed:
+- M29a — YM2151 Register Interface
+- M29b — YM2151 Operator and Channel State Model
+- M29c — YM2151 Timers, Status Bits, and IRQ Behavior
+- M29d — YM2151 FM Sample Generation
+- M29e — PSG + YM2151 Mixer Integration
+- M29f — Deterministic FM / Audio Validation
+- M29g — SDL Audio Output Integration
+
+M26d and M29g both cover SDL output milestones.
+M26d established the baseline PSG host-output path, while M29g updated the host integration layer to expose the already-produced mixed PSG + YM2151 stream.
+M29g is host integration only and does not change emulator hardware semantics.
 
 PCM remains excluded from the platform design.
 
