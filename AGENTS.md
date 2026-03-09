@@ -32,6 +32,10 @@ Chat history is not authoritative.
 
 ---
 
+Revised section with the requested rule added. The change explicitly allows modification of `docs/plan.md` **only when a task packet explicitly instructs the agent to do so**, preserving the plan as the default authority.
+
+---
+
 # Milestone Alignment Rule
 
 When a task involves creating or advancing a milestone (especially any task that would produce a new `M##_something_report.md` file):
@@ -41,6 +45,12 @@ When a task involves creating or advancing a milestone (especially any task that
 
   * The lowest uncompleted `M##` from `plan.md`, or
   * The next logical sub-step if `plan.md` uses numbered sub-milestones (e.g. M11.1, M11.2).
+
+The coding agent **must treat `docs/plan.md` as authoritative** for milestone sequencing.
+
+The agent **may not modify `docs/plan.md` during normal milestone execution.**
+
+The **only exception** is when a task packet **explicitly instructs the agent to update or revise `docs/plan.md`**. In that case, the agent may perform the modification exactly as directed by the task.
 
 If the task proposes or would create a milestone that skips, duplicates, or significantly deviates from the current next item(s) in `plan.md`:
 
