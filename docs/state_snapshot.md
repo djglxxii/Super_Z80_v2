@@ -1,19 +1,24 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M29c
+M29d
 
 ## Audio Status
 Current validated audio implementation:
 - PSG-style APU only
 
 Planned audio expansion:
-- YM2151 FM subsystem register interface, deterministic internal channel/operator state, and deterministic timer/status/IRQ-facing behavior implemented on ports `0x70-0x71`
-- no FM synthesis or mixer integration yet
+- YM2151 FM subsystem register interface, deterministic internal channel/operator state, timer/status/IRQ-facing behavior, and internal deterministic mono FM sample generation implemented on ports `0x70-0x71`
+- no PSG/YM mixer integration or SDL-facing YM path yet
 
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M29d complete.
+- YM2151 now generates deterministic internal mono FM samples during scheduler-owned `tick(uint32_t cycles)` calls using a shared `1024`-entry sine lookup table, placeholder phase increments, basic envelope progression, and channel algorithm routing.
+- Per-operator YM2151 state now includes explicit phase, phase increment, envelope level/state, and last-output tracking so FM synthesis advances without relying on wall-clock time or external buffering.
+- YM2151 key-on writes now transition operators into `ATTACK`, key-off writes transition them into `RELEASE`, and `current_sample()` exposes the latest internally generated signed `int16_t` sample for a future mixer milestone.
+- YM2151 unit coverage now verifies reset sample state, stored phase increments, nonzero FM sample generation, deterministic repeated sample sequences, and release-to-silence behavior alongside the existing register/timer/bus/scheduler checks.
 - M29c complete.
 - YM2151 now stores deterministic Timer A and Timer B latch/counter state, enable bits, overflow flags, and IRQ enable bits alongside the existing channel/operator model.
 - YM2151 timer control register writes now update timer start, IRQ-enable, and overflow-clear behavior while preserving raw register storage, and status reads on port `0x70` now expose timer overflow bits.
@@ -157,6 +162,8 @@ PCM remains excluded from the platform design.
 None yet.
 
 ## Verification Status
+M29d YM2151 verification is passing with the deterministic build/test flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure --tests-regex "super_z80_test_(ym2151|scheduler|bus)"`, and `ctest --test-dir build --output-on-failure`. The expanded `super_z80_test_ym2151` coverage verifies reset sample state, stored phase increments, deterministic FM sample generation, sample repeatability, release-to-silence behavior, timer/status/IRQ behavior, bus-visible pending state, and the scheduler-owned fixed YM2151 cycle budget.
+
 M29c YM2151 verification is passing with the deterministic build/test flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure --tests-regex "super_z80_test_(ym2151|scheduler|bus)"`, and `ctest --test-dir build --output-on-failure`. The expanded `super_z80_test_ym2151` coverage verifies timer latch storage, disabled/enabled deterministic progression, Timer A and Timer B overflow/status bits, IRQ-pending gating, control-path clears, repeatability, bus-visible pending state, and the scheduler-owned fixed YM2151 cycle budget.
 
 M29b YM2151 verification is passing with the deterministic build/test flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure --tests-regex "super_z80_test_(ym2151|scheduler|bus)"`, and `ctest --test-dir build --output-on-failure`. The expanded `super_z80_test_ym2151` coverage verifies channel/operator state decode, key-on writes, frequency/block updates, operator parameter storage, CPU-visible `OUT` behavior on ports `0x70-0x71`, and deterministic placeholder phase progression.
@@ -168,4 +175,4 @@ M28 documentation verification passing: `test -f docs/developer_guide.md`, `test
 Most recent implementation verification remains the passing M27 run: `cmake -S . -B build`, `cmake --build build`, and `ctest --test-dir build --output-on-failure`. The full suite included `super_z80_test_platform_determinism`, `super_z80_test_cpu_dma_irq_integration`, `super_z80_test_vdp_vblank_irq`, and `super_z80_test_input_audio_integration`, all passing in the shared deterministic headless build.
 
 ## Next Step
-Execute `M29d` to add deterministic YM2151 FM sample generation on top of the now-implemented register, channel/operator, and timer/IRQ state model.
+Execute `M29e` to integrate YM2151 output into the existing PSG audio path while preserving deterministic internal mixing behavior.

@@ -1,6 +1,61 @@
 #include "ym2151.h"
 
+#include <array>
+#include <cmath>
+
 namespace superz80 {
+
+namespace {
+
+constexpr double kPi = 3.14159265358979323846;
+constexpr uint32_t kSineTableSize = 1024U;
+constexpr uint16_t kEnvelopeMax = 1024U;
+constexpr uint32_t kPhaseIndexMask = kSineTableSize - 1U;
+
+std::array<int16_t, kSineTableSize> build_sine_table() {
+    std::array<int16_t, kSineTableSize> table{};
+    for (std::size_t index = 0; index < table.size(); ++index) {
+        const double radians =
+            (static_cast<double>(index) * 2.0 * kPi) / static_cast<double>(table.size());
+        table[index] = static_cast<int16_t>(std::lround(std::sin(radians) * 32767.0));
+    }
+    return table;
+}
+
+const std::array<int16_t, kSineTableSize>& sine_table() {
+    static const std::array<int16_t, kSineTableSize> kTable = build_sine_table();
+    return kTable;
+}
+
+uint16_t sustain_target_level(uint8_t sustain_level) {
+    return static_cast<uint16_t>(((15U - static_cast<uint16_t>(sustain_level & 0x0FU)) *
+                                  kEnvelopeMax) /
+                                 15U);
+}
+
+uint16_t attack_step(const YM2151Operator& op) {
+    return static_cast<uint16_t>(8U + (static_cast<uint16_t>(op.attack_rate) * 4U) +
+                                 (static_cast<uint16_t>(op.key_scale) * 8U));
+}
+
+uint16_t decay_step(const YM2151Operator& op) {
+    return static_cast<uint16_t>(1U + static_cast<uint16_t>(op.decay_rate));
+}
+
+uint16_t release_step(const YM2151Operator& op) {
+    return static_cast<uint16_t>(1U + (static_cast<uint16_t>(op.release_rate) * 2U));
+}
+
+uint32_t feedback_modulation(const YM2151Channel& channel, const YM2151Operator& op) {
+    if (channel.feedback == 0U) {
+        return 0U;
+    }
+
+    const int32_t scaled = (static_cast<int32_t>(op.last_output) * static_cast<int32_t>(channel.feedback)) >> 8U;
+    return static_cast<uint32_t>(scaled & static_cast<int32_t>(kPhaseIndexMask));
+}
+
+} // namespace
 
 YM2151::YM2151()
     : selected_register_(0U),
@@ -8,6 +63,7 @@ YM2151::YM2151()
       channels_{},
       timer_a_{},
       timer_b_{},
+      last_sample_(0),
       tick_call_count_(0U),
       accumulated_cycles_(0U) {
     reset();
@@ -21,6 +77,7 @@ void YM2151::reset() {
     }
     timer_a_ = make_default_timer();
     timer_b_ = make_default_timer();
+    last_sample_ = 0;
     tick_call_count_ = 0U;
     accumulated_cycles_ = 0U;
 }
@@ -56,14 +113,14 @@ void YM2151::tick(uint32_t cycles) {
     advance_timer(timer_a_, cycles, timer_a_period(timer_a_.latch));
     advance_timer(timer_b_, cycles, timer_b_period(static_cast<uint8_t>(timer_b_.latch & 0x00FFU)));
 
-    for (YM2151Channel& channel : channels_) {
-        for (YM2151Operator& op : channel.operators) {
-            if (!op.key_on) {
-                continue;
+    for (uint32_t cycle = 0U; cycle < cycles; ++cycle) {
+        for (YM2151Channel& channel : channels_) {
+            for (YM2151Operator& op : channel.operators) {
+                advance_operator(channel, op);
             }
-
-            op.phase_counter += cycles * operator_phase_increment(channel, op);
         }
+
+        update_current_sample();
     }
 }
 
@@ -101,6 +158,10 @@ uint8_t YM2151::status() const {
 bool YM2151::irq_pending() const {
     return (timer_a_.overflow && timer_a_.irq_enabled) ||
            (timer_b_.overflow && timer_b_.irq_enabled);
+}
+
+int16_t YM2151::current_sample() const {
+    return last_sample_;
 }
 
 uint64_t YM2151::tick_call_count() const {
@@ -142,8 +203,20 @@ void YM2151::apply_register_write(uint8_t reg, uint8_t value) {
     if (reg >= 0x28U && reg <= 0x2FU) {
         YM2151Channel& channel = channels_[reg - 0x28U];
         for (std::size_t op_index = 0; op_index < kOperatorsPerChannel; ++op_index) {
-            channel.operators[op_index].key_on =
-                ((value >> (4U + static_cast<uint8_t>(op_index))) & 0x01U) != 0U;
+            YM2151Operator& op = channel.operators[op_index];
+            const bool key_on = ((value >> (4U + static_cast<uint8_t>(op_index))) & 0x01U) != 0U;
+            if (key_on && !op.key_on) {
+                op.phase = 0U;
+                op.phase_counter = 0U;
+                op.phase_increment = operator_phase_increment(channel, op);
+                op.envelope_level = 0U;
+                op.envelope_state = YM2151EnvelopeState::Attack;
+                op.last_output = 0;
+            } else if (!key_on && op.key_on) {
+                op.envelope_state = YM2151EnvelopeState::Release;
+            }
+
+            op.key_on = key_on;
         }
         return;
     }
@@ -260,6 +333,135 @@ YM2151Timer YM2151::make_default_timer() {
     return {0U, 0U, false, false, false};
 }
 
+void YM2151::advance_operator(YM2151Channel& channel, YM2151Operator& op) {
+    op.phase_increment = operator_phase_increment(channel, op);
+    advance_envelope(op);
+
+    if (!op.key_on && op.envelope_state == YM2151EnvelopeState::Off) {
+        op.phase_increment = 0U;
+        op.last_output = 0;
+        return;
+    }
+
+    op.phase = (op.phase + op.phase_increment) & kPhaseMask;
+    op.phase_counter += op.phase_increment;
+}
+
+void YM2151::advance_envelope(YM2151Operator& op) {
+    switch (op.envelope_state) {
+    case YM2151EnvelopeState::Off:
+        op.envelope_level = 0U;
+        break;
+    case YM2151EnvelopeState::Attack: {
+        const uint32_t next_level = static_cast<uint32_t>(op.envelope_level) + attack_step(op);
+        if (next_level >= kEnvelopeMax) {
+            op.envelope_level = kEnvelopeMax;
+            op.envelope_state = YM2151EnvelopeState::Decay;
+        } else {
+            op.envelope_level = static_cast<uint16_t>(next_level);
+        }
+        break;
+    }
+    case YM2151EnvelopeState::Decay: {
+        const uint16_t target = sustain_target_level(op.sustain_level);
+        if (op.envelope_level <= target) {
+            op.envelope_level = target;
+            op.envelope_state = YM2151EnvelopeState::Sustain;
+            break;
+        }
+
+        const uint16_t step = decay_step(op);
+        op.envelope_level = (op.envelope_level > step) ? static_cast<uint16_t>(op.envelope_level - step)
+                                                       : target;
+        if (op.envelope_level <= target) {
+            op.envelope_level = target;
+            op.envelope_state = YM2151EnvelopeState::Sustain;
+        }
+        break;
+    }
+    case YM2151EnvelopeState::Sustain:
+        op.envelope_level = sustain_target_level(op.sustain_level);
+        break;
+    case YM2151EnvelopeState::Release: {
+        const uint16_t step = release_step(op);
+        if (op.envelope_level <= step) {
+            op.envelope_level = 0U;
+            op.envelope_state = YM2151EnvelopeState::Off;
+            op.last_output = 0;
+        } else {
+            op.envelope_level = static_cast<uint16_t>(op.envelope_level - step);
+        }
+        break;
+    }
+    }
+}
+
+int32_t YM2151::render_operator(YM2151Operator& op, int32_t modulation) const {
+    if (op.envelope_state == YM2151EnvelopeState::Off || op.envelope_level == 0U) {
+        op.last_output = 0;
+        return 0;
+    }
+
+    const uint32_t base_phase = (op.phase >> kPhaseFractionBits) & kPhaseIndexMask;
+    const uint32_t phase_index =
+        static_cast<uint32_t>((static_cast<int32_t>(base_phase) + modulation) &
+                              static_cast<int32_t>(kPhaseIndexMask));
+    int32_t sample = sine_table()[phase_index];
+    sample = (sample * static_cast<int32_t>(op.envelope_level)) / static_cast<int32_t>(kEnvelopeMax);
+
+    const int32_t total_level_scale = 127 - static_cast<int32_t>(op.total_level & 0x7FU);
+    sample = (sample * total_level_scale) / 127;
+    op.last_output = clamp_to_i16(sample);
+    return op.last_output;
+}
+
+int32_t YM2151::render_channel(YM2151Channel& channel) {
+    YM2151Operator& op1 = channel.operators[0];
+    YM2151Operator& op2 = channel.operators[1];
+    YM2151Operator& op3 = channel.operators[2];
+    YM2151Operator& op4 = channel.operators[3];
+
+    const int32_t op1_out =
+        render_operator(op1, static_cast<int32_t>(feedback_modulation(channel, op1)));
+    const int32_t op2_from_op1 = render_operator(op2, op1_out >> 6U);
+    const int32_t op3_from_op2 = render_operator(op3, op2_from_op1 >> 6U);
+    const int32_t op4_from_op3 = render_operator(op4, op3_from_op2 >> 6U);
+    const int32_t op3_from_op1 = render_operator(op3, op1_out >> 6U);
+    const int32_t op4_from_mix = render_operator(op4, (op2_from_op1 + op3_from_op1) >> 6U);
+    const int32_t op2_carrier = render_operator(op2, 0);
+    const int32_t op3_carrier = render_operator(op3, 0);
+    const int32_t op4_carrier = render_operator(op4, 0);
+
+    switch (channel.algorithm & 0x07U) {
+    case 0U:
+        return op4_from_op3;
+    case 1U:
+        return op4_from_mix;
+    case 2U:
+        return render_operator(op4, (op2_from_op1 + op3_from_op2) >> 6U);
+    case 3U:
+        return render_operator(op4, (op2_from_op1 + op3_carrier) >> 6U);
+    case 4U:
+        return op3_from_op2 + op4_carrier;
+    case 5U:
+        return op2_from_op1 + op4_from_op3;
+    case 6U:
+        return op2_from_op1 + op3_carrier + op4_carrier;
+    case 7U:
+    default:
+        return op1_out + op2_carrier + op3_carrier + op4_carrier;
+    }
+}
+
+void YM2151::update_current_sample() {
+    int32_t mixed_sample = 0;
+    for (YM2151Channel& channel : channels_) {
+        mixed_sample += render_channel(channel);
+    }
+
+    last_sample_ = clamp_to_i16(mixed_sample);
+}
+
 YM2151Operator& YM2151::operator_for_register_block(uint8_t base, uint8_t reg) {
     const uint8_t operator_index = static_cast<uint8_t>(reg - base);
     const std::size_t channel_index = operator_index % kChannelCount;
@@ -269,7 +471,22 @@ YM2151Operator& YM2151::operator_for_register_block(uint8_t base, uint8_t reg) {
 
 YM2151Operator YM2151::make_default_operator() {
     return {
-        0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, false, 0U,
+        0U,
+        0U,
+        0U,
+        0U,
+        0U,
+        0U,
+        0U,
+        0U,
+        0U,
+        false,
+        0U,
+        0U,
+        0U,
+        0U,
+        YM2151EnvelopeState::Off,
+        0,
     };
 }
 
@@ -301,6 +518,16 @@ uint32_t YM2151::timer_a_period(uint16_t latch) {
 uint32_t YM2151::timer_b_period(uint8_t latch) {
     const uint32_t countdown = 256U - static_cast<uint32_t>(latch);
     return ((countdown == 0U) ? 256U : countdown) * 16U;
+}
+
+int16_t YM2151::clamp_to_i16(int32_t value) {
+    if (value > 32767) {
+        return 32767;
+    }
+    if (value < -32768) {
+        return -32768;
+    }
+    return static_cast<int16_t>(value);
 }
 
 } // namespace superz80

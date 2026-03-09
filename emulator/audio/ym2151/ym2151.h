@@ -6,6 +6,14 @@
 
 namespace superz80 {
 
+enum class YM2151EnvelopeState : uint8_t {
+    Off = 0U,
+    Attack,
+    Decay,
+    Sustain,
+    Release,
+};
+
 struct YM2151Operator {
     uint8_t detune;
     uint8_t multiple;
@@ -17,7 +25,12 @@ struct YM2151Operator {
     uint8_t sustain_level;
     uint8_t key_scale;
     bool key_on;
+    uint32_t phase;
+    uint32_t phase_increment;
     uint32_t phase_counter;
+    uint16_t envelope_level;
+    YM2151EnvelopeState envelope_state;
+    int16_t last_output;
 };
 
 struct YM2151Channel {
@@ -62,10 +75,17 @@ public:
     const YM2151Timer& timer_b() const;
     uint8_t status() const;
     bool irq_pending() const;
+    int16_t current_sample() const;
     uint64_t tick_call_count() const;
     uint64_t accumulated_cycles() const;
 
 private:
+    static constexpr uint32_t kSineTableSize = 1024U;
+    static constexpr uint32_t kPhaseFractionBits = 10U;
+    static constexpr uint32_t kPhaseIndexMask = kSineTableSize - 1U;
+    static constexpr uint32_t kPhaseMask = (kSineTableSize << kPhaseFractionBits) - 1U;
+    static constexpr uint16_t kEnvelopeMax = 1024U;
+
     static constexpr uint8_t kTimerAHighRegister = 0x10U;
     static constexpr uint8_t kTimerALowRegister = 0x11U;
     static constexpr uint8_t kTimerBRegister = 0x12U;
@@ -77,6 +97,11 @@ private:
     void apply_timer_control(uint8_t value);
     void clear_timer_overflow(YM2151Timer& timer);
     void advance_timer(YM2151Timer& timer, uint32_t cycles, uint32_t period);
+    void advance_operator(YM2151Channel& channel, YM2151Operator& op);
+    void advance_envelope(YM2151Operator& op);
+    int32_t render_operator(YM2151Operator& op, int32_t modulation) const;
+    int32_t render_channel(YM2151Channel& channel);
+    void update_current_sample();
     static YM2151Timer make_default_timer();
     YM2151Operator& operator_for_register_block(uint8_t base, uint8_t reg);
     static YM2151Operator make_default_operator();
@@ -85,12 +110,14 @@ private:
                                              const YM2151Operator& op);
     static uint32_t timer_a_period(uint16_t latch);
     static uint32_t timer_b_period(uint8_t latch);
+    static int16_t clamp_to_i16(int32_t value);
 
     uint8_t selected_register_;
     std::array<uint8_t, kRegisterCount> registers_;
     std::array<YM2151Channel, kChannelCount> channels_;
     YM2151Timer timer_a_;
     YM2151Timer timer_b_;
+    int16_t last_sample_;
     uint64_t tick_call_count_;
     uint64_t accumulated_cycles_;
 };

@@ -46,6 +46,17 @@ bool expect_equal_u32(const char* name, uint32_t actual, uint32_t expected) {
     return true;
 }
 
+bool expect_equal_i16(const char* name, int16_t actual, int16_t expected) {
+    if (actual != expected) {
+        std::cerr << "[FAIL] " << name << " expected=" << expected << " actual=" << actual
+                  << std::endl;
+        return false;
+    }
+
+    std::cout << "[PASS] " << name << " value=" << actual << std::endl;
+    return true;
+}
+
 bool expect_true(const char* name, bool value) {
     if (!value) {
         std::cerr << "[FAIL] " << name << " expected=true actual=false" << std::endl;
@@ -88,6 +99,7 @@ int main() {
     ok = expect_equal_u32("reset-timer-b-latch-default", ym2151.timer_b().latch, 0U) && ok;
     ok = expect_equal_u8("reset-ym2151-status-default", ym2151.status(), 0x00U) && ok;
     ok = expect_false("reset-ym2151-irq-pending-default", ym2151.irq_pending()) && ok;
+    ok = expect_equal_i16("reset-current-sample-default", ym2151.current_sample(), 0) && ok;
 
     ym2151.write_port(superz80::YM2151::kRegisterSelectPort, 0x20U);
     ok = expect_equal_u8("port-0x70-selects-register", ym2151.selected_register(), 0x20U) && ok;
@@ -185,6 +197,12 @@ int main() {
                          0x34U) && ok;
 
     ym2151.tick(4U);
+    ok = expect_equal_u32("tick-stores-phase-increment-for-keyed-operator-0",
+                          ym2151.channel(0).operators[0].phase_increment,
+                          6998U) && ok;
+    ok = expect_equal_u32("tick-stores-phase-increment-for-keyed-operator-2",
+                          ym2151.channel(0).operators[2].phase_increment,
+                          3499U) && ok;
     ok = expect_equal_u64("tick-advances-keyed-operators-only",
                           ym2151.channel(0).operators[0].phase_counter,
                           27992U) && ok;
@@ -194,6 +212,8 @@ int main() {
     ok = expect_equal_u64("tick-advances-all-keyed-operators",
                           ym2151.channel(0).operators[2].phase_counter,
                           13996U) && ok;
+    ok = expect_true("tick-generates-nonzero-internal-fm-sample",
+                     ym2151.current_sample() != 0) && ok;
 
     superz80::YM2151 timer_disabled;
     write_register(timer_disabled, 0x10U, 0xFFU);
@@ -291,6 +311,59 @@ int main() {
     ok = expect_equal_u8("repeatability-matches-irq-pending",
                          repeat_a.irq_pending() ? 1U : 0U,
                          repeat_b.irq_pending() ? 1U : 0U) && ok;
+
+    superz80::YM2151 sample_repeat_a;
+    superz80::YM2151 sample_repeat_b;
+    for (superz80::YM2151* device : {&sample_repeat_a, &sample_repeat_b}) {
+        write_register(*device, 0x20U, 0x07U);
+        write_register(*device, 0x30U, 0xAAU);
+        write_register(*device, 0x38U, 0x0DU);
+        write_register(*device, 0x40U, 0x01U);
+        write_register(*device, 0x48U, 0x01U);
+        write_register(*device, 0x50U, 0x01U);
+        write_register(*device, 0x58U, 0x01U);
+        write_register(*device, 0x80U, 0xDFU);
+        write_register(*device, 0x88U, 0xDFU);
+        write_register(*device, 0x90U, 0xDFU);
+        write_register(*device, 0x98U, 0xDFU);
+        write_register(*device, 0xE0U, 0x0FU);
+        write_register(*device, 0xE8U, 0x0FU);
+        write_register(*device, 0xF0U, 0x0FU);
+        write_register(*device, 0xF8U, 0x0FU);
+        write_register(*device, 0x28U, 0xF0U);
+    }
+    constexpr std::array<uint32_t, 5> kSampleSteps = {1U, 2U, 5U, 3U, 7U};
+    for (uint32_t step : kSampleSteps) {
+        sample_repeat_a.tick(step);
+        sample_repeat_b.tick(step);
+        ok = expect_equal_i16("repeatability-matches-current-sample",
+                              sample_repeat_a.current_sample(),
+                              sample_repeat_b.current_sample()) && ok;
+        ok = expect_equal_u64("repeatability-matches-phase-counter",
+                              sample_repeat_a.channel(0).operators[0].phase_counter,
+                              sample_repeat_b.channel(0).operators[0].phase_counter) && ok;
+    }
+
+    superz80::YM2151 key_off_release;
+    write_register(key_off_release, 0x20U, 0x07U);
+    write_register(key_off_release, 0x30U, 0x80U);
+    write_register(key_off_release, 0x38U, 0x08U);
+    write_register(key_off_release, 0x40U, 0x01U);
+    write_register(key_off_release, 0x80U, 0xDFU);
+    write_register(key_off_release, 0xE0U, 0x0FU);
+    write_register(key_off_release, 0x28U, 0x10U);
+    key_off_release.tick(40U);
+    ok = expect_true("key-on-enters-envelope-attack-path",
+                     key_off_release.channel(0).operators[0].envelope_state !=
+                         superz80::YM2151EnvelopeState::Off) && ok;
+    write_register(key_off_release, 0x28U, 0x00U);
+    key_off_release.tick(64U);
+    ok = expect_equal_i16("key-off-release-eventually-silences-sample",
+                          key_off_release.current_sample(),
+                          0) && ok;
+    ok = expect_equal_u8("key-off-release-reaches-envelope-off",
+                         static_cast<uint8_t>(key_off_release.channel(0).operators[0].envelope_state),
+                         static_cast<uint8_t>(superz80::YM2151EnvelopeState::Off)) && ok;
 
     superz80::Bus bus;
     bus.write_port(superz80::Bus::kYm2151RegisterSelectPort, 0x20U);
