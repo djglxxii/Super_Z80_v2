@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M30
+M31
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,10 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M31 complete.
+- Replaced the Showcase ROM's hardcoded offset-based line writer with a reusable tile-text layer in `rom/showcase/src/text.asm` that writes zero-terminated ASCII strings by tile X/Y position into the background tilemap buffer.
+- The Showcase text path now clears lines deterministically, maps printable ASCII directly onto the local `rom/showcase/assets/font_8x8.asm` tile set, and treats unsupported characters as blank tiles.
+- The Showcase validation scene now renders `SUPER Z80 SHOWCASE` and `FONT AND TEXT OK` through the reusable text API, and repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 4` runs remain byte-identical.
 - M30 complete.
 - Restructured `rom/showcase/` into the canonical ROM project scaffold with modular `src/`, `assets/`, `inc/`, and `build/` directories plus a local `Makefile`.
 - Replaced the single-file Showcase validation ROM with a modular entry/init/main-loop layout that boots through the SDK runtime, initializes palette and VDP state, prepares a background tilemap buffer, uploads local font/splash assets through shared VRAM helpers, and enters a deterministic `wait_vblank` / `poll_input` / `update` / `render` loop.
@@ -212,6 +216,8 @@ PCM remains excluded from the platform design.
 None yet.
 
 ## Verification Status
+M31 font and text rendering verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `make -C rom/showcase clean`, `make -C rom/showcase`, and repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 4`. The Showcase ROM now verifies the reusable text API, local ASCII font mapping, required on-screen validation strings, successful ROM assembly, and stable repeated headless execution.
+
 M30 Showcase ROM scaffold verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `make -C rom/showcase`, and repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 4`. The new scaffold now verifies the canonical Showcase project layout, local asset ownership, successful ROM assembly into `rom/showcase/build/showcase.bin`, deterministic SDK-runtime boot, and stable repeated headless execution of the scaffolded main loop.
 
 M29j SDK integration validation is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `sjasmplus --nologo -I . --raw=build/showcase_validation.bin rom/showcase/src/main.asm`, and repeated `./build/super_z80 --rom build/showcase_validation.bin --headless --frames 4`. The new Showcase validation ROM now proves that the checked-in SDK runtime, font assets, and splash assets are sufficient for a minimal ROM to boot, initialize VRAM state through the current sequential VDP contract, and produce stable repeated headless execution summaries.

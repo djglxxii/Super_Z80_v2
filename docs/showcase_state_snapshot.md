@@ -1,7 +1,7 @@
 # Showcase State Snapshot
 
 ## Current Milestone
-M30
+M31
 
 ## Status
 Completed.
@@ -20,8 +20,14 @@ Completed.
 - `rom/showcase/Makefile` now emits `rom/showcase/build/showcase.bin` through `make` / `make clean` using `sjasmplus -I . -I ../../sdk`.
 - The main loop now follows the expected scaffold contract: `wait_vblank`, `poll_input`, `update`, and `render`, with deterministic input polling and placeholder update/render hooks for future milestones.
 
+## Font and Text Rendering
+- `rom/showcase/src/text.asm` now provides a reusable tile-text API for the Showcase ROM with explicit tile-coordinate entry points, deterministic row clearing, and zero-terminated ASCII string writes into the background tilemap buffer.
+- Printable ASCII bytes map directly onto the checked-in local `8x8` font asset, while unsupported characters map deterministically to the blank tile.
+- The string writer now supports multi-line text through newline handling without introducing implicit cursor state.
+- The validation scene now renders `SUPER Z80 SHOWCASE` and `FONT AND TEXT OK` through the reusable text path at intentional tile positions.
+
 ## Result
-M30 establishes `rom/showcase/` as the canonical runnable ROM project scaffold for future Showcase milestones. The ROM assembles into a repository-local artifact, boots through the SDK runtime, initializes deterministic graphics state, enters the modular main loop, and executes deterministically through the emulator's external-ROM headless path.
+M31 establishes the first real reusable text layer for the Showcase ROM. The ROM now assembles against its local font assets, writes deterministic ASCII text into the tilemap through explicit helper entry points, visibly renders the milestone validation text, and preserves stable repeated headless execution.
 
 ## Recommendation
-Proceed to `M31 - Font and Text Rendering`. The next step is expanding the scaffolded text path into a proper reusable text-rendering implementation built on the new project layout.
+Proceed to `M32 - System Splash Screen`. The next step is using the new text layer as part of a more intentional splash presentation without expanding into menus or broader UI systems yet.
