@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M29i
+M29j
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,10 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M29j complete.
+- Added `rom/showcase/src/main.asm` as a minimal SDK-backed Showcase validation ROM that boots through the repository runtime, initializes palette state, loads the checked-in font and splash tiles, clears a background tilemap buffer, and prints `SUPER Z80 SDK` / `BOOT VALIDATED`.
+- Added `rom/showcase/Makefile` so the Showcase validation ROM can be assembled into `build/showcase_validation.bin` through a repository-local target.
+- Repeated headless external-ROM execution now validates the first Showcase-oriented ROM path with deterministic `HEADLESS_ROM_RESULT` output from `./build/super_z80 --rom build/showcase_validation.bin --headless --frames 4`.
 - M29i complete.
 - Replaced the placeholder-only SDK directories with real checked-in include files, runtime startup code, and deterministic assembly assets under `sdk/`.
 - Added a minimal reset/runtime path that installs reset and `RST 38h` vectors, initializes stack and baseline hardware state, acknowledges IRQs, and transfers control to ROM-defined `sdk_main`.
@@ -203,6 +207,8 @@ PCM remains excluded from the platform design.
 None yet.
 
 ## Verification Status
+M29j SDK integration validation is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `sjasmplus --nologo -I . --raw=build/showcase_validation.bin rom/showcase/src/main.asm`, and repeated `./build/super_z80 --rom build/showcase_validation.bin --headless --frames 4`. The new Showcase validation ROM now proves that the checked-in SDK runtime, font assets, and splash assets are sufficient for a minimal ROM to boot, initialize VRAM state through the current sequential VDP contract, and produce stable repeated headless execution summaries.
+
 M29i SDK runtime surface verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `sjasmplus --nologo -I . --raw=build/test_sdk_rom.bin rom/starter/src/main.asm`, and repeated `./build/super_z80 --rom build/test_sdk_rom.bin --headless --frames 2`. The new SDK-backed ROM assembly path now verifies include resolution, startup/runtime linkage, asset inclusion, successful ROM execution, and deterministic repeated headless output.
 
 M29g SDL audio output integration is passing with the deterministic build/test flow: `cmake -S . -B build`, `cmake --build build --target super_z80_test_sdl_audio_output super_z80_test_audio_output_integration super_z80_test_audio_determinism super_z80_test_scheduler`, `ctest --test-dir build --output-on-failure --tests-regex "super_z80_test_(sdl_audio_output|audio_output_integration|audio_determinism|scheduler)"`, `cmake --build build`, and `ctest --test-dir build --output-on-failure`. The focused coverage now verifies SDL sink FIFO order, silence-on-underflow, bounded-buffer drop policy, dummy-driver initialization, preserved core-to-sink sample ordering, and unchanged deterministic mixed-output behavior.
