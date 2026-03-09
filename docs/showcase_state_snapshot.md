@@ -1,7 +1,7 @@
 # Showcase State Snapshot
 
 ## Current Milestone
-M32
+M33
 
 ## Status
 Completed.
@@ -31,8 +31,13 @@ Completed.
 - The local splash tilemap now targets the correct splash tile block in VRAM instead of the font tile range, preserving the intended asset upload order while fixing the previous indexing mismatch.
 - The splash assets now form a centered framed logo block so the ROM presents a clearer startup identity before later scene work exists.
 
+## Scrolling Demo
+- The Showcase ROM now maintains explicit `scroll_x` and `scroll_y` state bytes in RAM and resets them deterministically during initialization.
+- The main loop now advances horizontal background scroll by one pixel per frame during `showcase_update`, with register writes applied during `showcase_render`.
+- Background movement uses the existing splash tilemap and text composition path, so the demo validates real VDP scroll register behavior without adding scene management or asset-pipeline changes.
+
 ## Result
-M32 establishes the first intentional Showcase boot presentation. The ROM now boots into a deterministic static splash that combines local splash art with the reusable text layer, clearly demonstrates the asset upload flow, and preserves stable repeated headless execution.
+M33 establishes the first dynamic Showcase visual behavior. The ROM now boots into the existing splash composition, then continuously scrolls the background through deterministic per-frame VDP register updates while preserving stable repeated headless execution.
 
 ## Recommendation
-Proceed to `M33 - Scrolling Tilemap Demo`. The next step is adding controlled background movement on top of the now-stable splash composition path without expanding into menus or scene management yet.
+Proceed to `M34 - Sprite Rendering Demo`. The next step is validating sprite attribute upload and sprite visibility on top of the now-scrolling background scene.

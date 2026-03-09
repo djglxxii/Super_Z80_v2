@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M32
+M33
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,10 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M33 complete.
+- The Showcase ROM now keeps deterministic `scroll_x` / `scroll_y` state in RAM, increments horizontal scroll once per frame inside `showcase_update`, and writes the current values to the VDP background scroll registers during `showcase_render`.
+- The existing splash tilemap and reusable M31 text composition path now serve as the first dynamic Showcase scene, visibly moving across frames without introducing scene management or changing the asset pipeline.
+- Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 8` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xA0F7C5B ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
 - M32 complete.
 - The Showcase ROM now boots into a deterministic system splash that combines the local splash tile/tilemap assets with the reusable M31 text path to render `SUPER Z80 SHOWCASE` and `SYSTEM SPLASH OK`.
 - Fixed a real Showcase integration defect where the splash tilemap referenced raw low tile indices even though the splash assets are uploaded after the font block; the tilemap now targets the correct splash tile base in VRAM.

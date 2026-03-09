@@ -22,6 +22,12 @@ showcase_vdp_init_registers:
     out (SZ_PORT_VDP_FG_PATTERN_BANK), a
     ret
 
+showcase_reset_scroll_state:
+    xor a
+    ld (SHOWCASE_SCROLL_X), a
+    ld (SHOWCASE_SCROLL_Y), a
+    ret
+
 showcase_init_palette:
     SZ_VDP_SET_PALETTE_RGBA 0, $08, $0C, $20, $FF
     SZ_VDP_SET_PALETTE_RGBA 1, $E8, $F0, $FF, $FF
@@ -100,4 +106,11 @@ showcase_vdp_clear_bytes:
     ld a, b
     or c
     jp nz, .clear_loop
+    ret
+
+showcase_apply_scroll_registers:
+    ld a, (SHOWCASE_SCROLL_X)
+    out (SZ_PORT_VDP_BG_SCROLL_X), a
+    ld a, (SHOWCASE_SCROLL_Y)
+    out (SZ_PORT_VDP_BG_SCROLL_Y), a
     ret

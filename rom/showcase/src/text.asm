@@ -116,4 +116,4 @@ showcase_title_text:
     db "SUPER Z80 SHOWCASE", 0
 
 showcase_status_text:
-    db "SYSTEM SPLASH OK", 0
+    db "SCROLL DEMO OK", 0

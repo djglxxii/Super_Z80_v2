@@ -24,7 +24,11 @@ showcase_poll_input:
     ret
 
 showcase_update:
+    ld a, (SHOWCASE_SCROLL_X)
+    inc a
+    ld (SHOWCASE_SCROLL_X), a
     ret
 
 showcase_render:
+    call showcase_apply_scroll_registers
     ret
