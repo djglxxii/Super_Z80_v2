@@ -1,4 +1,5 @@
 #include "emulator_core.h"
+#include "../test_audio_sequence_helpers.h"
 
 #include <array>
 #include <cstddef>
@@ -54,6 +55,13 @@ void program_deterministic_mix(EmulatorCore& core) {
     core.bus().write_port(superz80::Bus::kAudioNoiseControlPort, 0x00U);
     core.bus().write_port(superz80::Bus::kAudioVolumeNoisePort, 0x02U);
     core.bus().write_port(superz80::Bus::kAudioControlPort, 0x01U);
+}
+
+void program_combined_mix(EmulatorCore& core) {
+    superz80::testaudio::program_apu_tone(core.bus(), 0x0002U, 0x00U, 0x01U);
+    core.bus().write_port(superz80::Bus::kAudioNoiseControlPort, 0x00U);
+    core.bus().write_port(superz80::Bus::kAudioVolumeNoisePort, 0x02U);
+    superz80::testaudio::program_deterministic_ym2151_voice(core.bus());
 }
 
 std::vector<EmulatorCore::AudioSample> collect_all_audio(EmulatorCore& core) {
@@ -210,6 +218,38 @@ int main() {
     ok = expect_true("headless-output-produces-non-empty-sample-block", !repeat_a_samples.empty()) && ok;
     ok = expect_true("repeatable-core-runs-produce-identical-sample-blocks", repeat_a_samples == repeat_b_samples) && ok;
     ok = expect_equal_size("buffer-consume-drains-available-samples", repeat_a.available_audio_samples(), 0U) && ok;
+
+    EmulatorCore ym_only_a;
+    EmulatorCore ym_only_b;
+    ym_only_a.initialize();
+    ym_only_b.initialize();
+    superz80::testaudio::program_apu_tone(ym_only_a.bus(), 0x0002U, 0x00U, 0x00U);
+    superz80::testaudio::program_apu_tone(ym_only_b.bus(), 0x0002U, 0x00U, 0x00U);
+    superz80::testaudio::program_deterministic_ym2151_voice(ym_only_a.bus());
+    superz80::testaudio::program_deterministic_ym2151_voice(ym_only_b.bus());
+    const std::vector<EmulatorCore::AudioSample> ym_only_a_samples =
+        superz80::testaudio::collect_core_audio(ym_only_a, 64U);
+    const std::vector<EmulatorCore::AudioSample> ym_only_b_samples =
+        superz80::testaudio::collect_core_audio(ym_only_b, 64U);
+    ok = expect_true("ym-only-core-runs-produce-identical-sample-blocks",
+                     ym_only_a_samples == ym_only_b_samples) && ok;
+    ok = expect_true("ym-only-core-output-is-non-silent",
+                     !superz80::testaudio::all_zero(ym_only_a_samples)) && ok;
+
+    EmulatorCore combined_repeat_a;
+    EmulatorCore combined_repeat_b;
+    combined_repeat_a.initialize();
+    combined_repeat_b.initialize();
+    program_combined_mix(combined_repeat_a);
+    program_combined_mix(combined_repeat_b);
+    const std::vector<EmulatorCore::AudioSample> combined_repeat_a_samples =
+        superz80::testaudio::collect_core_audio(combined_repeat_a, 64U);
+    const std::vector<EmulatorCore::AudioSample> combined_repeat_b_samples =
+        superz80::testaudio::collect_core_audio(combined_repeat_b, 64U);
+    ok = expect_true("combined-core-runs-produce-identical-sample-blocks",
+                     combined_repeat_a_samples == combined_repeat_b_samples) && ok;
+    ok = expect_true("combined-core-output-differs-from-ym-only-output",
+                     combined_repeat_a_samples != ym_only_a_samples) && ok;
 
     EmulatorCore boundary_core;
     boundary_core.initialize();

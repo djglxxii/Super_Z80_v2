@@ -1,4 +1,5 @@
 #include "emulator_core.h"
+#include "../test_audio_sequence_helpers.h"
 
 #include <array>
 #include <cstddef>
@@ -29,31 +30,14 @@ bool expect_equal_size(const char* name, std::size_t actual, std::size_t expecte
     return true;
 }
 
-void program_tone_a(EmulatorCore& core, uint16_t period, uint8_t volume, uint8_t control) {
-    core.bus().write_port(superz80::Bus::kAudioToneALowPort, static_cast<uint8_t>(period & 0x00FFU));
-    core.bus().write_port(superz80::Bus::kAudioToneAHighPort, static_cast<uint8_t>((period >> 8U) & 0x0FU));
-    core.bus().write_port(superz80::Bus::kAudioVolumeAPort, volume);
-    core.bus().write_port(superz80::Bus::kAudioControlPort, control);
-}
-
-std::vector<EmulatorCore::AudioSample> collect_audio(EmulatorCore& core, std::size_t scanlines) {
-    for (std::size_t index = 0U; index < scanlines; ++index) {
-        core.step_scanline();
+bool expect_equal_i16(const char* name, int16_t actual, int16_t expected) {
+    if (actual != expected) {
+        std::cerr << "[FAIL] " << name << " expected=" << expected
+                  << " actual=" << actual << std::endl;
+        return false;
     }
 
-    std::vector<EmulatorCore::AudioSample> samples(core.available_audio_samples(), 0);
-    const std::size_t copied = core.consume_audio_samples(samples.data(), samples.size());
-    samples.resize(copied);
-    return samples;
-}
-
-bool all_zero(const std::vector<EmulatorCore::AudioSample>& samples) {
-    for (const auto sample : samples) {
-        if (sample != 0) {
-            return false;
-        }
-    }
-
+    std::cout << "[PASS] " << name << " value=" << actual << std::endl;
     return true;
 }
 
@@ -71,35 +55,78 @@ int main() {
 
     EmulatorCore enabled_core;
     enabled_core.initialize();
-    program_tone_a(enabled_core, 0x0001U, 0x00U, 0x01U);
-    const std::vector<EmulatorCore::AudioSample> enabled_samples = collect_audio(enabled_core, 32U);
+    superz80::testaudio::program_apu_tone(enabled_core.bus(), 0x0001U, 0x00U, 0x01U);
+    const std::vector<EmulatorCore::AudioSample> enabled_samples =
+        superz80::testaudio::collect_core_audio(enabled_core, 32U);
     ok = expect_true("sample-handoff-produces-non-empty-block", !enabled_samples.empty()) && ok;
-    ok = expect_true("sample-handoff-produces-audible-samples", !all_zero(enabled_samples)) && ok;
+    ok = expect_true("sample-handoff-produces-audible-samples",
+                     !superz80::testaudio::all_zero(enabled_samples)) && ok;
     ok = expect_equal_size("sample-handoff-drains-buffer-after-consume",
                            enabled_core.available_audio_samples(), 0U) && ok;
 
     EmulatorCore muted_core;
     muted_core.initialize();
-    program_tone_a(muted_core, 0x0001U, 0x00U, 0x03U);
-    const std::vector<EmulatorCore::AudioSample> muted_samples = collect_audio(muted_core, 32U);
-    ok = expect_true("muted-state-produces-silent-payload", all_zero(muted_samples)) && ok;
+    superz80::testaudio::program_apu_tone(muted_core.bus(), 0x0001U, 0x00U, 0x03U);
+    const std::vector<EmulatorCore::AudioSample> muted_samples =
+        superz80::testaudio::collect_core_audio(muted_core, 32U);
+    ok = expect_true("muted-state-produces-silent-payload",
+                     superz80::testaudio::all_zero(muted_samples)) && ok;
 
     EmulatorCore disabled_core;
     disabled_core.initialize();
-    program_tone_a(disabled_core, 0x0001U, 0x00U, 0x00U);
-    const std::vector<EmulatorCore::AudioSample> disabled_samples = collect_audio(disabled_core, 32U);
-    ok = expect_true("disabled-state-produces-silent-payload", all_zero(disabled_samples)) && ok;
+    superz80::testaudio::program_apu_tone(disabled_core.bus(), 0x0001U, 0x00U, 0x00U);
+    const std::vector<EmulatorCore::AudioSample> disabled_samples =
+        superz80::testaudio::collect_core_audio(disabled_core, 32U);
+    ok = expect_true("disabled-state-produces-silent-payload",
+                     superz80::testaudio::all_zero(disabled_samples)) && ok;
 
     EmulatorCore repeat_a;
     EmulatorCore repeat_b;
     repeat_a.initialize();
     repeat_b.initialize();
-    program_tone_a(repeat_a, 0x0010U, 0x02U, 0x01U);
-    program_tone_a(repeat_b, 0x0010U, 0x02U, 0x01U);
-    const std::vector<EmulatorCore::AudioSample> repeat_a_samples = collect_audio(repeat_a, 64U);
-    const std::vector<EmulatorCore::AudioSample> repeat_b_samples = collect_audio(repeat_b, 64U);
+    superz80::testaudio::program_apu_tone(repeat_a.bus(), 0x0010U, 0x02U, 0x01U);
+    superz80::testaudio::program_apu_tone(repeat_b.bus(), 0x0010U, 0x02U, 0x01U);
+    const std::vector<EmulatorCore::AudioSample> repeat_a_samples =
+        superz80::testaudio::collect_core_audio(repeat_a, 64U);
+    const std::vector<EmulatorCore::AudioSample> repeat_b_samples =
+        superz80::testaudio::collect_core_audio(repeat_b, 64U);
     ok = expect_equal_size("repeatability-block-size", repeat_a_samples.size(), repeat_b_samples.size()) && ok;
     ok = expect_true("repeatability-produced-sample-blocks-match", repeat_a_samples == repeat_b_samples) && ok;
+
+    EmulatorCore ym_only_a;
+    EmulatorCore ym_only_b;
+    ym_only_a.initialize();
+    ym_only_b.initialize();
+    superz80::testaudio::program_apu_tone(ym_only_a.bus(), 0x0002U, 0x00U, 0x00U);
+    superz80::testaudio::program_apu_tone(ym_only_b.bus(), 0x0002U, 0x00U, 0x00U);
+    superz80::testaudio::program_deterministic_ym2151_voice(ym_only_a.bus());
+    superz80::testaudio::program_deterministic_ym2151_voice(ym_only_b.bus());
+    const std::vector<EmulatorCore::AudioSample> ym_only_samples_a =
+        superz80::testaudio::collect_core_audio(ym_only_a, 64U);
+    const std::vector<EmulatorCore::AudioSample> ym_only_samples_b =
+        superz80::testaudio::collect_core_audio(ym_only_b, 64U);
+    ok = expect_true("ym-only-core-output-is-repeatable", ym_only_samples_a == ym_only_samples_b) && ok;
+    ok = expect_true("ym-only-core-output-is-audible",
+                     !superz80::testaudio::all_zero(ym_only_samples_a)) && ok;
+    ok = expect_equal_i16("ym-only-apu-source-remains-silent", ym_only_a.bus().apu().current_sample(), 0) && ok;
+
+    EmulatorCore combined_a;
+    EmulatorCore combined_b;
+    combined_a.initialize();
+    combined_b.initialize();
+    superz80::testaudio::program_apu_tone(combined_a.bus(), 0x0002U, 0x00U, 0x01U);
+    superz80::testaudio::program_apu_tone(combined_b.bus(), 0x0002U, 0x00U, 0x01U);
+    superz80::testaudio::program_deterministic_ym2151_voice(combined_a.bus());
+    superz80::testaudio::program_deterministic_ym2151_voice(combined_b.bus());
+    const std::vector<EmulatorCore::AudioSample> combined_samples_a =
+        superz80::testaudio::collect_core_audio(combined_a, 64U);
+    const std::vector<EmulatorCore::AudioSample> combined_samples_b =
+        superz80::testaudio::collect_core_audio(combined_b, 64U);
+    ok = expect_true("combined-core-output-is-repeatable", combined_samples_a == combined_samples_b) && ok;
+    ok = expect_true("combined-core-output-differs-from-apu-only-output",
+                     combined_samples_a != repeat_a_samples) && ok;
+    ok = expect_true("combined-core-output-differs-from-ym-only-output",
+                     combined_samples_a != ym_only_samples_a) && ok;
 
     return ok ? 0 : 1;
 }

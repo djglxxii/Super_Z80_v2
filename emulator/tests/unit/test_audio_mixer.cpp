@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <iostream>
+#include <vector>
 
 namespace {
 
@@ -14,6 +15,16 @@ bool expect_equal_i16(const char* name, int16_t actual, int16_t expected) {
     }
 
     std::cout << "[PASS] " << name << " value=" << actual << std::endl;
+    return true;
+}
+
+bool expect_true(const char* name, bool value) {
+    if (!value) {
+        std::cerr << "[FAIL] " << name << " expected=true actual=false" << std::endl;
+        return false;
+    }
+
+    std::cout << "[PASS] " << name << " value=true" << std::endl;
     return true;
 }
 
@@ -32,6 +43,23 @@ public:
 private:
     int16_t sample_;
 };
+
+std::vector<int16_t> collect_mixed_sequence(superz80::AudioMixer& mixer,
+                                            TestSampleSource& psg,
+                                            TestSampleSource& ym,
+                                            const std::vector<int16_t>& psg_samples,
+                                            const std::vector<int16_t>& ym_samples) {
+    std::vector<int16_t> mixed;
+    mixed.reserve(psg_samples.size());
+    for (std::size_t index = 0U; index < psg_samples.size(); ++index) {
+        psg.set_sample(psg_samples[index]);
+        ym.set_sample(ym_samples[index]);
+        mixer.tick();
+        mixed.push_back(mixer.current_sample());
+    }
+
+    return mixed;
+}
 
 } // namespace
 
@@ -76,6 +104,15 @@ int main() {
     ok = expect_equal_i16("deterministic-repeatability-second", repeat_a[1], repeat_b[1]) && ok;
     ok = expect_equal_i16("deterministic-repeatability-third", repeat_a[2], repeat_b[2]) && ok;
     ok = expect_equal_i16("deterministic-repeatability-fourth", repeat_a[3], repeat_b[3]) && ok;
+
+    const std::vector<int16_t> psg_sequence = {0, 1024, -4096, 30000, -30000, 777};
+    const std::vector<int16_t> ym_sequence = {0, -512, 2048, 10000, -10000, -777};
+    const std::vector<int16_t> mixed_a =
+        collect_mixed_sequence(mixer, psg, ym, psg_sequence, ym_sequence);
+    const std::vector<int16_t> mixed_b =
+        collect_mixed_sequence(mixer, psg, ym, psg_sequence, ym_sequence);
+    ok = expect_true("scripted-mixed-sequence-is-exactly-repeatable", mixed_a == mixed_b) && ok;
+    ok = expect_true("scripted-mixed-sequence-preserves-silent-baseline", mixed_a.front() == 0) && ok;
 
     return ok ? 0 : 1;
 }

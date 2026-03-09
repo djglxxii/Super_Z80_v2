@@ -3,9 +3,11 @@
 #include "scheduler.h"
 #include "ym2151.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <iostream>
+#include <vector>
 
 namespace {
 
@@ -82,6 +84,37 @@ void write_register(superz80::YM2151& ym2151, uint8_t reg, uint8_t value) {
     ym2151.write_port(superz80::YM2151::kRegisterDataPort, value);
 }
 
+void program_deterministic_voice(superz80::YM2151& ym2151) {
+    write_register(ym2151, 0x20U, 0x07U);
+    write_register(ym2151, 0x30U, 0xAAU);
+    write_register(ym2151, 0x38U, 0x0DU);
+    write_register(ym2151, 0x40U, 0x01U);
+    write_register(ym2151, 0x48U, 0x01U);
+    write_register(ym2151, 0x50U, 0x01U);
+    write_register(ym2151, 0x58U, 0x01U);
+    write_register(ym2151, 0x80U, 0xDFU);
+    write_register(ym2151, 0x88U, 0xDFU);
+    write_register(ym2151, 0x90U, 0xDFU);
+    write_register(ym2151, 0x98U, 0xDFU);
+    write_register(ym2151, 0xE0U, 0x0FU);
+    write_register(ym2151, 0xE8U, 0x0FU);
+    write_register(ym2151, 0xF0U, 0x0FU);
+    write_register(ym2151, 0xF8U, 0x0FU);
+    write_register(ym2151, 0x28U, 0xF0U);
+}
+
+std::vector<int16_t> collect_sample_sequence(superz80::YM2151& ym2151,
+                                             const std::array<uint32_t, 6>& steps) {
+    std::vector<int16_t> samples;
+    samples.reserve(steps.size());
+    for (const uint32_t step : steps) {
+        ym2151.tick(step);
+        samples.push_back(ym2151.current_sample());
+    }
+
+    return samples;
+}
+
 } // namespace
 
 int main() {
@@ -100,6 +133,11 @@ int main() {
     ok = expect_equal_u8("reset-ym2151-status-default", ym2151.status(), 0x00U) && ok;
     ok = expect_false("reset-ym2151-irq-pending-default", ym2151.irq_pending()) && ok;
     ok = expect_equal_i16("reset-current-sample-default", ym2151.current_sample(), 0) && ok;
+    constexpr std::array<uint32_t, 6> kDeterministicSteps = {1U, 2U, 5U, 3U, 7U, 11U};
+    const std::vector<int16_t> reset_sequence = collect_sample_sequence(ym2151, kDeterministicSteps);
+    ok = expect_true("reset-silent-sequence-remains-all-zero",
+                     std::all_of(reset_sequence.begin(), reset_sequence.end(),
+                                 [](int16_t sample) { return sample == 0; })) && ok;
 
     ym2151.write_port(superz80::YM2151::kRegisterSelectPort, 0x20U);
     ok = expect_equal_u8("port-0x70-selects-register", ym2151.selected_register(), 0x20U) && ok;
@@ -315,22 +353,7 @@ int main() {
     superz80::YM2151 sample_repeat_a;
     superz80::YM2151 sample_repeat_b;
     for (superz80::YM2151* device : {&sample_repeat_a, &sample_repeat_b}) {
-        write_register(*device, 0x20U, 0x07U);
-        write_register(*device, 0x30U, 0xAAU);
-        write_register(*device, 0x38U, 0x0DU);
-        write_register(*device, 0x40U, 0x01U);
-        write_register(*device, 0x48U, 0x01U);
-        write_register(*device, 0x50U, 0x01U);
-        write_register(*device, 0x58U, 0x01U);
-        write_register(*device, 0x80U, 0xDFU);
-        write_register(*device, 0x88U, 0xDFU);
-        write_register(*device, 0x90U, 0xDFU);
-        write_register(*device, 0x98U, 0xDFU);
-        write_register(*device, 0xE0U, 0x0FU);
-        write_register(*device, 0xE8U, 0x0FU);
-        write_register(*device, 0xF0U, 0x0FU);
-        write_register(*device, 0xF8U, 0x0FU);
-        write_register(*device, 0x28U, 0xF0U);
+        program_deterministic_voice(*device);
     }
     constexpr std::array<uint32_t, 5> kSampleSteps = {1U, 2U, 5U, 3U, 7U};
     for (uint32_t step : kSampleSteps) {
@@ -343,6 +366,16 @@ int main() {
                               sample_repeat_a.channel(0).operators[0].phase_counter,
                               sample_repeat_b.channel(0).operators[0].phase_counter) && ok;
     }
+    superz80::YM2151 sequence_repeat_a;
+    superz80::YM2151 sequence_repeat_b;
+    program_deterministic_voice(sequence_repeat_a);
+    program_deterministic_voice(sequence_repeat_b);
+    const std::vector<int16_t> sequence_a = collect_sample_sequence(sequence_repeat_a, kDeterministicSteps);
+    const std::vector<int16_t> sequence_b = collect_sample_sequence(sequence_repeat_b, kDeterministicSteps);
+    ok = expect_true("deterministic-sample-sequences-match-exactly", sequence_a == sequence_b) && ok;
+    ok = expect_true("deterministic-sample-sequence-produces-audible-output",
+                     std::any_of(sequence_a.begin(), sequence_a.end(),
+                                 [](int16_t sample) { return sample != 0; })) && ok;
 
     superz80::YM2151 key_off_release;
     write_register(key_off_release, 0x20U, 0x07U);

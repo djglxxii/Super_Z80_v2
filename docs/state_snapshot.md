@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M29e
+M29f
 
 ## Audio Status
 Current validated audio implementation:
@@ -14,6 +14,11 @@ Planned audio expansion:
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M29f complete.
+- Added reusable test-only deterministic audio sequence helpers for programming APU/YM2151 state and collecting exact mixed sample vectors from scheduler- and EmulatorCore-owned stepping.
+- Expanded audio validation coverage to prove exact repeatability for silent baseline, APU-only, YM2151-only, and combined PSG+YM paths across the audio mixer, scheduler-owned advancement, direct YM2151 sample generation, and EmulatorCore output consumption.
+- New regression coverage now explicitly proves `EmulatorCore` emits scheduler-owned mixed samples rather than an APU-only stream by validating audible YM2151-only output while the APU source remains silent.
+- The current internal mixed audio pipeline is now locked down with deterministic exact-equality tests so future SDL/output work can rely on the scheduler-owned path without redesigning synthesis or timing ownership.
 - M29e complete.
 - Added a deterministic integer `AudioMixer` module that reads the existing PSG-style `APU` sample state plus the YM2151 internal sample and clamps the summed result into a scheduler-owned mixed `int16_t` output.
 - The scheduler now owns platform-audio sample composition through explicit audio-sample stepping plus scanline YM2151 advancement, and `EmulatorCore` now consumes scheduler-owned mixed samples instead of pushing raw PSG output directly.
@@ -166,6 +171,8 @@ PCM remains excluded from the platform design.
 None yet.
 
 ## Verification Status
+M29f deterministic audio validation is passing with the deterministic build/test flow: `cmake -S . -B build`, `cmake --build build --target super_z80_test_audio_mixer super_z80_test_scheduler super_z80_test_audio_output_integration super_z80_test_audio_determinism super_z80_test_ym2151`, `ctest --test-dir build --output-on-failure --tests-regex "super_z80_test_(audio_mixer|scheduler|audio_output_integration|audio_determinism|ym2151)"`, `cmake --build build`, and `ctest --test-dir build --output-on-failure`. The expanded coverage now verifies exact mixed-sample repeatability for silent baseline, APU-only, YM2151-only, combined output, fixed scripted scheduler stepping, direct YM2151 sample sequences, and EmulatorCore mixed-output consumption.
+
 M29e audio mixer verification is passing with the deterministic build/test flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure --tests-regex "super_z80_test_(audio_mixer|scheduler|audio_output_integration|audio_determinism|ym2151)"`, and `ctest --test-dir build --output-on-failure`. The new `super_z80_test_audio_mixer` coverage verifies scheduler-facing PSG/YM additive mixing, clamp behavior, and deterministic repeatability, while the focused regression run confirms the mixed output path preserves scheduler, YM2151, and core audio behavior.
 
 M29d YM2151 verification is passing with the deterministic build/test flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure --tests-regex "super_z80_test_(ym2151|scheduler|bus)"`, and `ctest --test-dir build --output-on-failure`. The expanded `super_z80_test_ym2151` coverage verifies reset sample state, stored phase increments, deterministic FM sample generation, sample repeatability, release-to-silence behavior, timer/status/IRQ behavior, bus-visible pending state, and the scheduler-owned fixed YM2151 cycle budget.
@@ -181,4 +188,4 @@ M28 documentation verification passing: `test -f docs/developer_guide.md`, `test
 Most recent implementation verification remains the passing M27 run: `cmake -S . -B build`, `cmake --build build`, and `ctest --test-dir build --output-on-failure`. The full suite included `super_z80_test_platform_determinism`, `super_z80_test_cpu_dma_irq_integration`, `super_z80_test_vdp_vblank_irq`, and `super_z80_test_input_audio_integration`, all passing in the shared deterministic headless build.
 
 ## Next Step
-Execute `M29f` to expand deterministic validation around the combined PSG plus YM2151 output path, including broader mixed-output repeatability and regression coverage.
+Execute `M29g` to connect the already-validated scheduler-owned mixed sample stream to SDL playback without changing internal timing ownership, synthesis behavior, or deterministic sample generation.
