@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M29g
+M29i
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,11 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M29i complete.
+- Replaced the placeholder-only SDK directories with real checked-in include files, runtime startup code, and deterministic assembly assets under `sdk/`.
+- Added a minimal reset/runtime path that installs reset and `RST 38h` vectors, initializes stack and baseline hardware state, acknowledges IRQs, and transfers control to ROM-defined `sdk_main`.
+- Added deterministic font and splash asset assembly files plus a starter ROM source under `rom/starter/src/main.asm` to prove that ROM code can assemble against the repository SDK surface.
+- Developer-facing documentation now points ROM authors at the new SDK/runtime include contract and the external `--rom` headless execution flow.
 - M29g complete.
 - Added a dedicated SDL-facing `SdlAudioOutput` sink with a bounded FIFO/ring buffer that accepts scheduler-owned mixed `int16_t` samples from `EmulatorCore` and feeds them to SDL through a callback-only consumption path.
 - The SDL callback now consumes already-buffered mono `48000 Hz` signed-16 PCM and emits local silence on underrun without advancing emulator state, preserving scheduler ownership of synthesis and sample timing.
@@ -198,6 +203,8 @@ PCM remains excluded from the platform design.
 None yet.
 
 ## Verification Status
+M29i SDK runtime surface verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `sjasmplus --nologo -I . --raw=build/test_sdk_rom.bin rom/starter/src/main.asm`, and repeated `./build/super_z80 --rom build/test_sdk_rom.bin --headless --frames 2`. The new SDK-backed ROM assembly path now verifies include resolution, startup/runtime linkage, asset inclusion, successful ROM execution, and deterministic repeated headless output.
+
 M29g SDL audio output integration is passing with the deterministic build/test flow: `cmake -S . -B build`, `cmake --build build --target super_z80_test_sdl_audio_output super_z80_test_audio_output_integration super_z80_test_audio_determinism super_z80_test_scheduler`, `ctest --test-dir build --output-on-failure --tests-regex "super_z80_test_(sdl_audio_output|audio_output_integration|audio_determinism|scheduler)"`, `cmake --build build`, and `ctest --test-dir build --output-on-failure`. The focused coverage now verifies SDL sink FIFO order, silence-on-underflow, bounded-buffer drop policy, dummy-driver initialization, preserved core-to-sink sample ordering, and unchanged deterministic mixed-output behavior.
 
 M29f deterministic audio validation is passing with the deterministic build/test flow: `cmake -S . -B build`, `cmake --build build --target super_z80_test_audio_mixer super_z80_test_scheduler super_z80_test_audio_output_integration super_z80_test_audio_determinism super_z80_test_ym2151`, `ctest --test-dir build --output-on-failure --tests-regex "super_z80_test_(audio_mixer|scheduler|audio_output_integration|audio_determinism|ym2151)"`, `cmake --build build`, and `ctest --test-dir build --output-on-failure`. The expanded coverage now verifies exact mixed-sample repeatability for silent baseline, APU-only, YM2151-only, combined output, fixed scripted scheduler stepping, direct YM2151 sample sequences, and EmulatorCore mixed-output consumption.
@@ -217,4 +224,4 @@ M28 documentation verification passing: `test -f docs/developer_guide.md`, `test
 Most recent implementation verification remains the passing M27 run: `cmake -S . -B build`, `cmake --build build`, and `ctest --test-dir build --output-on-failure`. The full suite included `super_z80_test_platform_determinism`, `super_z80_test_cpu_dma_irq_integration`, `super_z80_test_vdp_vblank_irq`, and `super_z80_test_input_audio_integration`, all passing in the shared deterministic headless build.
 
 ## Next Step
-Choose the next explicit task packet. A likely follow-up is reconciling `docs/plan.md` with the completed post-`M29f` SDL host-output milestone sequence.
+Choose the next explicit task packet. The next planned follow-up is `M29j - SDK Integration Validation` to boot a minimal Showcase-oriented ROM through the new SDK runtime path.

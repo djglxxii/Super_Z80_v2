@@ -1,7 +1,7 @@
 # Super_Z80 Audio Programming Guide
 
 ## Scope
-This guide covers the implemented audio hardware only: the PSG-style APU on `0xD0-0xDB`. There is no YM2151 or FM programming interface in the current platform.
+This guide covers the implemented audio hardware: the PSG-style APU on `0xD0-0xDB` plus the YM2151 expansion interface on `0x70-0x71`.
 
 ## Audio Block Summary
 - `3` tone channels with 12-bit periods
@@ -98,7 +98,9 @@ Behavior:
 - Sample timing is scheduler-owned. Software should think in scanlines and register writes, not host time.
 - SDL playback in the shell is only a sink for samples already produced by the deterministic core.
 
-## Future FM Support
-YM2151-based FM audio is planned but not yet available in the current emulator build.
+## YM2151 Entry Points
+- Port `0x70` selects a YM2151 register for subsequent access and reports YM2151 status when read.
+- Port `0x71` writes the value for the currently selected YM2151 register.
+- The authoritative programming contract for the implemented FM device is [docs/ym2151_reference.md](/home/djglxxii/src/Super_Z80_v2/docs/ym2151_reference.md).
 
-Do not target FM hardware until the `M29a-M29f` milestone block is completed. Until then, write audio code only against the implemented PSG-style registers on `0xD0-0xDB`.
+Use the PSG guide above for baseline audio and the YM reference when targeting FM-specific behavior.

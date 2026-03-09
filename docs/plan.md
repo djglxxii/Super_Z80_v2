@@ -2,123 +2,580 @@
 
 ## Strategy
 
-The project follows deterministic, milestone-driven development with explicit verification at each step.  Work proceeds in phases:
+The project follows deterministic, milestone-driven development with explicit verification at each step.
 
-1. **Infrastructure & VDP Completion (M0–M23)** – Already completed.
-2. **Platform Completion (M24 and onwards)** – Current focus.
-3. **Future Extensions (optional)** – Only if ROM‑driven or bug‑fixing needs arise.
+Each milestone must:
 
-Each milestone must remain narrow in scope, produce a report in `artifacts/reports/`, update `docs/state_snapshot.md` appropriately, and include deterministic build/tests commands.
+* remain narrow in scope
+* produce a report in `artifacts/reports/`
+* update `docs/state_snapshot.md`
+* include deterministic build/test commands
 
----
+Work proceeds through the following phases:
 
-## Phase 1 – Infrastructure & VDP Completion (Completed)
+1. **Infrastructure & VDP Completion (M0–M23)** – Completed
+2. **Platform Completion (M24–M28)** – Completed
+3. **Audio Expansion (M29)** – Completed
+4. **Platform Stabilization (implicit)** – Completed during M29 work
+5. **Showcase ROM & Developer Reference (M29h–M43)** – Current focus
 
-All core emulator subsystems and graphics features are implemented.
-
-| Milestone  | Description                                                                                                                                                                                                                                                                               |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **M0–M17** | Repository bootstrap; emulator skeleton; CRC utilities; memory, bus, CPU; I/O routing; scheduler/timing; IRQ controller; VBlank; DMA; video pipeline skeleton; audio subsystem placeholder; emulator coordinator; headless runner; regression harness; SDL shell; replay/snapshot parity. |
-| **M16**    | Foreground tile plane (second layer) with independent scrolling.                                                                                                                                                                                                                          |
-| **M17**    | Sprite priority (front/behind FG) and deterministic ordering.                                                                                                                                                                                                                             |
-| **M18**    | Sprite scanline evaluation and 16‑sprite limit per scanline; overflow flag.                                                                                                                                                                                                               |
-| **M19**    | Sprite attributes: horizontal & vertical flipping.                                                                                                                                                                                                                                        |
-| **M20**    | Sprite pattern banks: bank select flag; bank 0 (0x0000), bank 1 (0x2000).                                                                                                                                                                                                                 |
-| **M21**    | Tile pattern banks for BG and FG planes via `0xEC`/`0xED` registers.                                                                                                                                                                                                                      |
-| **M22**    | Sprite collision detection; status register bit for sprite collision.                                                                                                                                                                                                                     |
-| **M23**    | VDP baseline freeze.  A canonical graphics spec (`docs/vdp_baseline_v1.md`) was added and the VDP contract is now locked; future changes require a bug fix, ROM‑driven feature, or explicit revision.                                                                                     |
-
-**Result:** The emulator now has a complete memory/bus/CPU/IRQ/DMA infrastructure and a stable, fully‑featured VDP (background, foreground, sprites with priority, flipping, pattern banks, scanline limits, collision detection, scrolling, palette system).
+The goal of Phase 5 is to produce a **reference ROM for developers and a capability demonstration for the Super_Z80 platform**.
 
 ---
 
-## Phase 2 – Platform Completion (Planned)
+# Phase 1 – Infrastructure & VDP Completion (Completed)
 
-With the VDP frozen, focus shifts to finishing the remaining hardware subsystems—primarily controller input and audio—and validating the entire emulator.
+All core emulator subsystems and graphics features were implemented.
 
-### M24 – Controller Input Hardware
+| Milestone | Description                                                                                                                                                                                                                                                 |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M0–M17    | Repository bootstrap; emulator skeleton; CRC utilities; memory, bus, CPU; I/O routing; scheduler/timing; IRQ controller; VBlank; DMA; video pipeline skeleton; emulator coordinator; headless runner; regression harness; SDL shell; replay/snapshot parity |
+| M16       | Foreground tile plane (second layer) with independent scrolling                                                                                                                                                                                             |
+| M17       | Sprite priority (front/behind FG) and deterministic ordering                                                                                                                                                                                                |
+| M18       | Sprite scanline evaluation and 16-sprite limit per scanline; overflow flag                                                                                                                                                                                  |
+| M19       | Sprite attributes: horizontal and vertical flipping                                                                                                                                                                                                         |
+| M20       | Sprite pattern banks                                                                                                                                                                                                                                        |
+| M21       | Tile pattern banks for BG and FG planes                                                                                                                                                                                                                     |
+| M22       | Sprite collision detection status bit                                                                                                                                                                                                                       |
+| M23       | VDP baseline freeze                                                                                                                                                                                                                                         |
 
-* Wire PAD1/PAD1_SYS controller ports through the bus and I/O layers.
-* Implement deterministic button reading and expose them via the SDL shell.
-* Update unit tests to cover various button states.
+Result:
 
-### M25 – Audio System Design
+The emulator now contains a **stable and complete graphics system**, including:
 
-* Produce `docs/audio_spec.md` that defines the audio architecture: number of channels, noise vs. tone, volume control, sample format, and register map.
-* Specify how audio integrates with the scheduler and bus.
-
-### M26 – Audio Implementation (sub-milestones)
-
-1. **M26a – Audio Registers & State**
-   Implement the CPU-visible audio registers, reset behavior, masking rules, and bus-visible semantics.
-
-2. **M26b – Tone and Noise Generator State Progression**
-   Implement deterministic internal progression for baseline tone and noise generators through an explicit advancement API, with no mixer or host output.
-
-3. **M26c – Audio Mixer and Internal Sample Output State**
-   Implement deterministic per-channel amplitude evaluation, fixed volume lookup behavior, baseline channel mixing, and internal mixed sample generation. No SDL playback in this milestone.
-
-4. **M26d – SDL Audio Output Integration**
-   Connect the existing internal audio sample stream to SDL real-time playback. Keep host wall-clock non-authoritative and preserve scheduler-owned timing.
-
-5. **M26e – Audio Deterministic Validation and Tests**
-   Add deterministic tests and validation coverage for register behavior, generator progression, mixing behavior, silence/mute cases, and SDL integration boundaries where testable.
-
-### M27 – Platform Validation
-
-* Run an end‑to‑end validation harness that exercises CPU, DMA, IRQ, VBlank, input, and audio together.
-* Create or reuse small ROM snippets to verify correctness.
-* Fix any remaining bugs in hardware behaviour.
-
-### M28 – Documentation & SDK Update
-
-* Update `docs/plan.md`, `docs/state_snapshot.md`, `AGENTS.md` and other docs to reflect completed subsystems.
-* Provide clear guidance for ROM developers about the VDP and audio contract.
-* Ensure the SDK libraries/examples align with the final hardware model.
+* background plane
+* foreground plane
+* sprites
+* palette system
+* scrolling
+* pattern banks
+* scanline evaluation
 
 ---
 
-## Phase 3 – Audio Expansion Reconciliation (Completed)
+# Phase 2 – Platform Completion (Completed)
 
-The YM2151 expansion block is now implemented and validated. The milestone sequence below reflects repository truth rather than the earlier PSG-only planning state.
+This phase completed the remaining platform subsystems beyond the graphics pipeline.
 
-### M29 – YM2151 FM Audio Expansion
+## M24 – Controller Input Hardware
 
-#### FM / Audio Hardware and Validation
+Implemented deterministic controller input.
 
-- **M29a – YM2151 Register Interface**
-- **M29b – YM2151 Operator and Channel State Model**
-- **M29c – YM2151 Timers, Status Bits, and IRQ Behavior**
-- **M29d – YM2151 FM Sample Generation**
-- **M29e – PSG + YM2151 Mixer Integration**
-- **M29f – Deterministic FM / Audio Validation**
+Features:
 
-#### Host Platform Integration
-
-- **M29g – SDL Audio Output Integration**
-
-M29g is a host-platform milestone.
-It exposes the already-produced emulator audio stream to SDL and does not redefine emulator hardware behavior.
-
-PCM remains excluded from the platform design.
-
-## Phase 4 – Future Extensions (Optional)
-
-Only pursue these if ROM developers or tests reveal a need. Each would be scoped as its own milestone.
-
-* **Window/HUD Plane:** An overlay plane for HUD elements.
-* **Mid‑frame Palette/Scroll Changes:** For raster effects.
-* **Advanced Audio Features Beyond YM2151:** Additional audio work only if ROM-driven after the planned YM2151 block; PCM sample playback remains excluded.
-* **Additional VDP Registers:** e.g. sprite‑0 hit flag or scanline interrupts.
-
-The previously planned **Showcase ROM** is intentionally deferred and will be treated as a separate project once the emulator platform is complete.
+* PAD1 and PAD1_SYS ports wired through bus
+* deterministic button state reads
+* SDL input integration
+* unit tests for input states
 
 ---
 
-## Verification & Rollback Strategy
+## M25 – Audio System Design
 
-* Verification commands for each milestone must include building (`cmake -S . -B build`, `cmake --build build`) and running tests (`ctest --test-dir build`).  Milestones only complete when tests pass and a report is generated.
-* Any milestone work must be reversible via git history; scope must remain narrow to allow rollback.
-* The plan may be updated if new subsystems are discovered, but only through explicit task packets that also update this plan.
+Produced `docs/audio_spec.md` defining the baseline audio architecture.
+
+Design includes:
+
+* tone channels
+* noise channel
+* register map
+* scheduler integration
+* deterministic timing rules
 
 ---
+
+## M26 – Audio Implementation
+
+### M26a – Audio Registers
+
+CPU-visible register interface.
+
+### M26b – Tone and Noise Generator State
+
+Deterministic internal audio generator progression.
+
+### M26c – Audio Mixer
+
+Channel mixing and amplitude evaluation.
+
+### M26d – SDL Audio Integration
+
+Host audio playback integration.
+
+### M26e – Audio Validation
+
+Deterministic validation tests.
+
+---
+
+## M27 – Platform Validation
+
+End-to-end hardware validation.
+
+Tests include:
+
+* CPU
+* DMA
+* IRQ
+* VBlank
+* input
+* audio
+
+---
+
+## M28 – Documentation & SDK Alignment
+
+Updated documentation and SDK interfaces to match the finalized hardware model.
+
+Deliverables included:
+
+* updated developer documentation
+* SDK runtime guidance
+* hardware contract alignment
+
+---
+
+# Phase 3 – YM2151 FM Audio Expansion (Completed)
+
+This phase introduced the YM2151 FM synthesis expansion chip.
+
+## M29 – YM2151 Implementation
+
+### FM Hardware Milestones
+
+* M29a – YM2151 register interface
+* M29b – operator and channel state model
+* M29c – timers and IRQ behavior
+* M29d – FM sample generation
+* M29e – PSG + YM mixer integration
+* M29f – deterministic audio validation
+
+### Host Platform Integration
+
+* M29g – SDL audio output integration
+
+PCM audio remains intentionally excluded.
+
+---
+
+# Phase 4 – Platform Stabilization (Implicit Completion)
+
+During the YM2151 milestone work, the emulator platform was stabilized through deterministic validation and regression testing.
+
+Subsystems now considered stable:
+
+* CPU execution
+* memory bus
+* DMA
+* VDP
+* sprite pipeline
+* input
+* PSG audio
+* YM2151 FM audio
+* scheduler
+* deterministic testing harness
+
+At this point the **Super_Z80 platform is considered feature complete**.
+
+---
+
+# Phase 5 – Showcase ROM and Developer Reference (Current Focus)
+
+
+
+This phase produces a **reference ROM demonstrating platform capabilities** and serves as a **developer template ROM**.
+
+The Showcase ROM must emphasize:
+
+* clarity of implementation
+* reusable coding patterns
+* deterministic execution
+* clear subsystem demonstrations
+
+The ROM will reside in:
+
+```
+rom/showcase/
+```
+
+---
+
+# Showcase ROM Milestones
+
+## M29h – ROM Execution Contract
+
+Implement the minimal emulator support required to load and execute an external ROM artifact through the current emulator CLI and headless flows.
+
+Objectives:
+
+* add ROM-loading support for external ROM files
+* accept ROM path in emulator execution flow
+* support deterministic headless execution for ROM milestones
+* document the verification command for ROM work
+
+Verification:
+
+* emulator runs a minimal ROM from disk
+* headless execution succeeds for that ROM
+* repeated runs are deterministic
+
+Purpose:
+
+Establish the execution foundation required for all Showcase ROM work.
+
+---
+
+## M29i – Minimal SDK Runtime Surface
+
+Create the minimal real SDK runtime/include/resource surface required for Showcase ROM development.
+
+Objectives:
+
+* replace placeholder-only SDK paths with real include/runtime files
+* provide minimal startup/init path
+* provide default font resource path
+* provide minimal splash/startup resource contract
+
+Verification:
+
+* minimal ROM can assemble against SDK includes
+* SDK startup path is callable
+* font/splash resources exist in repository truth
+
+Purpose:
+
+Establish the minimum real SDK foundation required before SDK-backed Showcase integration.
+
+---
+
+## M29j – SDK Integration Validation
+
+Validate integration of the SDK runtime modules with a minimal Showcase ROM.
+
+Objectives:
+
+* create minimal `rom/showcase/`
+* boot through SDK initialization path
+* verify font and splash resources can be referenced
+* boot successfully in emulator
+
+Verification:
+
+* ROM builds successfully
+* ROM boots in emulator
+* ROM displays SDK splash/startup deterministically
+
+Purpose:
+
+Ensure the Showcase ROM properly consumes the SDK runtime infrastructure before additional features are implemented.
+
+---
+
+## M30 – Showcase ROM Project Scaffold
+
+Create the base ROM project.
+
+Objectives:
+
+* Create `rom/showcase/` directory
+* Add ROM Makefile
+* Add minimal boot code
+* Initialize VRAM
+* Clear tilemaps
+* Display blank screen
+
+Verification:
+
+ROM boots successfully in emulator.
+
+Purpose:
+
+Provide a **minimal runnable ROM foundation**.
+
+---
+
+## M31 – Font and Text Rendering
+
+Add a basic character set and text rendering.
+
+Features:
+
+* load font tiles into VRAM
+* implement tile-based text output routine
+* render text to screen
+
+Verification:
+
+ROM displays:
+
+```
+SUPER Z80 SHOWCASE
+```
+
+Purpose:
+
+Provide a **reference implementation for text output**.
+
+---
+
+## M32 – System Splash Screen
+
+Add a platform splash screen.
+
+Features:
+
+* load splash tilemap
+* display title screen
+* show system name and version
+
+Verification:
+
+ROM boots to splash screen.
+
+Purpose:
+
+Demonstrate **ROM initialization flow and static graphics rendering**.
+
+---
+
+## M33 – Scrolling Tilemap Demo
+
+Introduce background scrolling.
+
+Features:
+
+* large tilemap
+* horizontal scroll
+* continuous scrolling movement
+
+Verification:
+
+background scrolls smoothly.
+
+Purpose:
+
+Demonstrate **tilemap scrolling registers**.
+
+---
+
+## M34 – Vertical Scrolling Demo
+
+Add vertical scrolling capability.
+
+Features:
+
+* vertical scrolling
+* large vertical map
+
+Verification:
+
+vertical scroll movement visible.
+
+Purpose:
+
+Show developers how to use **vertical scroll registers**.
+
+---
+
+## M35 – Parallax Scrolling Demo
+
+Demonstrate layered scrolling.
+
+Features:
+
+* background plane scrolling
+* foreground plane scrolling
+* different scroll speeds
+
+Verification:
+
+two layers move at different speeds.
+
+Purpose:
+
+Demonstrate **parallax scrolling techniques**.
+
+---
+
+## M36 – Basic Sprite Rendering
+
+Introduce sprite system usage.
+
+Features:
+
+* load sprite tiles
+* render sprite
+* move sprite across screen
+
+Verification:
+
+sprite moves across screen.
+
+Purpose:
+
+Demonstrate **basic sprite usage**.
+
+---
+
+## M37 – Sprite Animation
+
+Add sprite animation.
+
+Features:
+
+* animation frames
+* timed frame switching
+
+Verification:
+
+sprite visibly animates.
+
+Purpose:
+
+Demonstrate **sprite animation techniques**.
+
+---
+
+## M38 – Metasprite Example
+
+Introduce multi-sprite objects.
+
+Features:
+
+* group multiple sprites
+* construct a single object from multiple sprite entries
+
+Verification:
+
+multi-sprite object moves correctly.
+
+Purpose:
+
+Demonstrate **metasprite construction**.
+
+---
+
+## M39 – PSG Sound Effects
+
+Introduce sound effects.
+
+Features:
+
+* PSG tone generation
+* triggered sound effects
+
+Verification:
+
+button press triggers sound.
+
+Purpose:
+
+Demonstrate **PSG audio usage**.
+
+---
+
+## M40 – YM2151 Music Playback
+
+Introduce FM music playback.
+
+Features:
+
+* load simple music pattern
+* continuous playback
+
+Verification:
+
+background music plays.
+
+Purpose:
+
+Demonstrate **YM2151 FM audio usage**.
+
+---
+
+## M41 – Audio Mixing Demonstration
+
+Combine music and sound effects.
+
+Features:
+
+* background music
+* triggered sound effects
+
+Verification:
+
+sound effects play over music.
+
+Purpose:
+
+Demonstrate **simultaneous audio playback and mixing**.
+
+---
+
+## M42 – Integrated Showcase Scene
+
+Combine multiple systems into one demonstration.
+
+Scene includes:
+
+* scrolling background
+* animated metasprite
+* music playback
+* triggered sound effects
+* text overlay
+
+Verification:
+
+interactive demonstration runs correctly.
+
+Purpose:
+
+Provide a **complete platform capability demonstration**.
+
+---
+
+## M43 – Developer Reference ROM Finalization
+
+Finalize the Showcase ROM as the official reference implementation.
+
+Deliverables:
+
+* code cleanup and final structure
+* explanatory comments in source files
+* developer documentation
+
+Documentation file:
+
+```
+docs/showcase_programmers_guide.md
+```
+
+Purpose:
+
+Provide the **canonical example ROM for developers building games on the Super_Z80 platform**.
+
+---
+
+# Verification & Rollback Strategy
+
+Each milestone must include deterministic verification.
+
+Verification commands must include:
+
+```
+cmake -S . -B build
+cmake --build build
+ctest --test-dir build
+```
+
+Showcase ROM milestones may also include deterministic emulator execution:
+
+```
+emulator --headless rom/showcase/showcase.rom
+```
+
+Rollback strategy:
+
+* each milestone remains narrow in scope
+* all work is reversible through git history
+* plan modifications must update `docs/plan.md` explicitly

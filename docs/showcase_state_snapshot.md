@@ -1,19 +1,19 @@
 # Showcase State Snapshot
 
 ## Current Milestone
-M29h
+M29i
 
 ## Status
 Completed.
 
-## Execution Contract
-- `super_z80` now accepts `--rom <path>` and defaults that path to deterministic headless execution when no SDL shell flag is selected.
-- Headless ROM verification runs through the existing `Bus::load_rom(...)` boot path and executes for an explicit frame count via `--frames <count>`.
-- The headless command prints a deterministic `HEADLESS_ROM_RESULT` summary containing ROM/RAM/audio CRC32 values plus frame, scanline, and audio sample counts.
-- Missing or unreadable ROM paths now fail with a deterministic error message.
+## SDK Runtime Surface
+- `sdk/inc/` now contains real public include files for the base platform, VDP, and controller input contracts.
+- `sdk/runtime/inc/runtime.inc` now injects a minimal reset path, stack setup, deterministic hardware init, and an IRQ acknowledge stub before jumping to `sdk_main`.
+- `sdk/assets/` now contains deterministic checked-in font and splash assets using the platform's `8 x 8` / `64-byte` tile format.
+- `rom/starter/src/main.asm` is the minimal starter ROM source proving that ROM code can assemble directly against the checked-in SDK surface.
 
 ## Result
-M29h establishes the external ROM execution prerequisite needed for Showcase ROM work. External ROM bytes can now be loaded from disk and executed through the normal emulator runtime without SDL input or audio requirements.
+M29i establishes the first real repository-truth SDK surface for ROM work. ROMs can now include the checked-in SDK headers and runtime, assemble into a flat binary, and execute deterministically through the external ROM contract added in M29h.
 
 ## Recommendation
-Proceed to `M29i - Minimal SDK Runtime Surface`. The next dependency is providing the real SDK include/runtime/resource surface that can produce a ROM artifact for the new emulator execution contract.
+Proceed to `M29j - SDK Integration Validation`. The next dependency is validating that the minimal SDK runtime and assets boot cleanly inside the first Showcase-oriented ROM integration step.

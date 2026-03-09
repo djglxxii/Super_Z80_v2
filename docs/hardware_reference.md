@@ -24,6 +24,7 @@ Notes:
 ## I/O Port Summary
 | Ports | Function |
 | --- | --- |
+| `0x70-0x71` | YM2151 FM expansion |
 | `0xD0-0xDB` | Audio processing unit |
 | `0xDC` | `PAD1` controller port |
 | `0xDD` | `PAD1_SYS` controller system port |
@@ -33,7 +34,7 @@ Notes:
 | `0xF2` | IRQ acknowledge |
 | `0xF4-0xF9` | DMA registers |
 
-There is no implemented YM2151 or FM register block in the current hardware model.
+YM2151 FM expansion is implemented on ports `0x70-0x71`.
 
 ## VDP Overview
 - VRAM size: `64 KiB`.
@@ -105,13 +106,13 @@ Direct CPU writes to `0xDC` and `0xDD` are ignored.
 
 ## Audio Overview
 - Implemented hardware: deterministic PSG-style APU on ports `0xD0-0xDB`.
-- Planned expansion: YM2151 FM synthesizer in future `M29a-M29f` milestones.
+- FM expansion: YM2151 register/status interface on `0x70-0x71`.
 - Channels: `Tone A`, `Tone B`, `Tone C`, and `Noise`.
 - Output: mono signed `16-bit` PCM at `48000 Hz`.
 - Tone channels use 12-bit periods and 50% duty square waves.
 - Noise uses a deterministic 15-bit LFSR.
 - Volume registers are 4-bit attenuation values mapped through the fixed `15..0` lookup table from [docs/audio_spec.md](/home/djglxxii/src/Super_Z80_v2/docs/audio_spec.md).
-- There is still no implemented YM2151 or FM register block in the current hardware model; the YM2151 work is an approved future target only.
+- YM2151 FM expansion is present and mixed with the PSG output in the current hardware model.
 
 ## IRQ and VBlank
 - IRQ status port: `0xF0`.
