@@ -1,7 +1,7 @@
 # Showcase State Snapshot
 
 ## Current Milestone
-M36
+M37
 
 ## Status
 Completed.
@@ -44,8 +44,15 @@ Completed.
 - `showcase_update` now advances the sprite horizontally by `+1` pixel per frame, producing visible screen-space motion independent from the layer scroll registers.
 - The Showcase VDP helper now loads the VRAM pointer through the control port, fixing the prior ROM-side defect that prevented deterministic SAT updates after boot.
 
+## Sprite Animation
+- The Showcase sprite asset now contains two local `8x8` frames stored in adjacent tile slots, keeping the frame-to-tile relationship explicit inside the ROM source.
+- The ROM now owns deterministic `sprite_frame` and `sprite_anim_counter` bytes in RAM, both initialized during boot and advanced only from the main loop update step.
+- `showcase_update` increments the animation counter every frame, toggles `sprite_frame` on a fixed `8`-frame cadence, and preserves the existing `+1` horizontal sprite motion from M36.
+- `showcase_render_sprite` now rewrites SAT entry `0` with the current Y/X position and `showcase_demo_sprite_tile_base + sprite_frame`, reusing the validated M36 SAT update path without changing layer composition.
+- Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 16` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xCAEAE31F ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
+
 ## Result
-M36 turns the Showcase ROM into a sprite-capable reference scene. The ROM now demonstrates a moving high-priority sprite on top of the validated parallax background, using deterministic SAT updates and a minimal real VRAM pointer-load contract.
+M37 turns the Showcase ROM into a deterministic animated sprite reference scene. The ROM now demonstrates a moving high-priority sprite with visible frame switching on top of the validated parallax background, while keeping the SAT update path simple and explicit.
 
 ## Recommendation
-Proceed to `M37 - Sprite Animation`. The next step is adding animation frame switching on top of the now-validated single-sprite SAT and motion path.
+Proceed to `M38 - Metasprite Example`. The next step is extending the Showcase sprite example from one animated hardware sprite into a small multi-sprite composition without disturbing the deterministic update/render pattern.

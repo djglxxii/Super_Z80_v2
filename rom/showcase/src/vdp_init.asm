@@ -40,6 +40,9 @@ showcase_reset_sprite_state:
     ld (SHOWCASE_SPRITE_X), a
     ld a, SHOWCASE_SPRITE_START_Y
     ld (SHOWCASE_SPRITE_Y), a
+    xor a
+    ld (SHOWCASE_SPRITE_FRAME), a
+    ld (SHOWCASE_SPRITE_ANIM_COUNTER), a
     ret
 
 showcase_init_palette:
@@ -154,7 +157,8 @@ showcase_render_sprite:
     call vdp_write_vram
     ld a, (SHOWCASE_SPRITE_X)
     call vdp_write_vram
-    ld a, showcase_demo_sprite_tile_base
+    ld a, (SHOWCASE_SPRITE_FRAME)
+    add a, showcase_demo_sprite_tile_base
     call vdp_write_vram
     ld a, SHOWCASE_SPRITE_FLAGS
     call vdp_write_vram

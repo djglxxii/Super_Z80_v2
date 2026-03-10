@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M36
+M37
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,11 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M37 complete.
+- The Showcase ROM sprite demo now includes two visually distinct local animation frames plus deterministic `sprite_frame` and `sprite_anim_counter` RAM state, both initialized during boot and advanced only from the main loop update path.
+- The single Showcase sprite still moves `+1` pixel horizontally per frame above the parallax scene, and it now toggles its SAT tile index every `8` frames by rewriting entry `0` with `showcase_demo_sprite_tile_base + sprite_frame`.
+- The M36 SAT update flow remains unchanged apart from tile selection, preserving the validated VRAM pointer-load helper and explicit per-frame SAT rewrite contract.
+- Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 16` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xCAEAE31F ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
 - M36 complete.
 - The Showcase ROM now includes a local `8x8` sprite tile asset, deterministic `sprite_x` / `sprite_y` RAM state, and a render path that rewrites sprite attribute table entry `0` each frame.
 - The parallax Showcase scene now demonstrates a high-priority sprite moving `+1` pixel horizontally per frame while the background and foreground layers continue their existing independent scroll rates.

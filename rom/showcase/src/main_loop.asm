@@ -37,6 +37,21 @@ showcase_update:
     ld a, (SHOWCASE_SPRITE_X)
     inc a
     ld (SHOWCASE_SPRITE_X), a
+
+    ld a, (SHOWCASE_SPRITE_ANIM_COUNTER)
+    inc a
+    cp SHOWCASE_SPRITE_ANIM_PERIOD
+    jr c, .store_anim_counter
+
+    xor a
+    ld (SHOWCASE_SPRITE_ANIM_COUNTER), a
+    ld a, (SHOWCASE_SPRITE_FRAME)
+    xor 1
+    ld (SHOWCASE_SPRITE_FRAME), a
+    ret
+
+.store_anim_counter
+    ld (SHOWCASE_SPRITE_ANIM_COUNTER), a
     ret
 
 showcase_render:
