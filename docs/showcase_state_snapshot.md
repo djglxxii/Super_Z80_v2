@@ -1,7 +1,7 @@
 # Showcase State Snapshot
 
 ## Current Milestone
-M37
+M38
 
 ## Status
 Completed.
@@ -51,8 +51,15 @@ Completed.
 - `showcase_render_sprite` now rewrites SAT entry `0` with the current Y/X position and `showcase_demo_sprite_tile_base + sprite_frame`, reusing the validated M36 SAT update path without changing layer composition.
 - Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 16` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xCAEAE31F ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
 
+## Metasprite Example
+- The Showcase ROM now stores a single logical metasprite origin in deterministic `meta_x` and `meta_y` RAM bytes, keeping all hardware-sprite positioning derived from one shared base coordinate.
+- `rom/showcase/assets/demo_sprite.asm` now contains two `2x2` animation frames laid out as four `8x8` tiles per frame, ordered explicitly for top-left, top-right, bottom-left, and bottom-right SAT composition.
+- `showcase_render_sprite` now rewrites SAT entries `0` through `3` every frame, deriving each component sprite's X/Y position from the shared origin plus constant `8`-pixel offsets and selecting the correct tile block from the current animation frame.
+- The existing M37 frame toggle cadence remains intact, but tile selection now advances the whole `2x2` metasprite in sync while the parallax scene and `+1` horizontal motion continue unchanged.
+- Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 20` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xBBF8B4A9 ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
+
 ## Result
-M37 turns the Showcase ROM into a deterministic animated sprite reference scene. The ROM now demonstrates a moving high-priority sprite with visible frame switching on top of the validated parallax background, while keeping the SAT update path simple and explicit.
+M38 turns the Showcase ROM into a deterministic metasprite reference scene. The ROM now demonstrates a moving animated `2x2` sprite composition built from four coordinated SAT entries on top of the validated parallax background, while keeping the update/render path explicit and ROM-author friendly.
 
 ## Recommendation
-Proceed to `M38 - Metasprite Example`. The next step is extending the Showcase sprite example from one animated hardware sprite into a small multi-sprite composition without disturbing the deterministic update/render pattern.
+Proceed to `M39 - Controller Input Demo`. The next step is using the existing input polling path to drive Showcase movement without breaking the deterministic scene and metasprite update pattern.

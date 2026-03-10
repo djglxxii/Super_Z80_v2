@@ -36,10 +36,10 @@ showcase_reset_scroll_state:
     ret
 
 showcase_reset_sprite_state:
-    ld a, SHOWCASE_SPRITE_START_X
-    ld (SHOWCASE_SPRITE_X), a
-    ld a, SHOWCASE_SPRITE_START_Y
-    ld (SHOWCASE_SPRITE_Y), a
+    ld a, SHOWCASE_METASPRITE_START_X
+    ld (SHOWCASE_META_X), a
+    ld a, SHOWCASE_METASPRITE_START_Y
+    ld (SHOWCASE_META_Y), a
     xor a
     ld (SHOWCASE_SPRITE_FRAME), a
     ld (SHOWCASE_SPRITE_ANIM_COUNTER), a
@@ -153,13 +153,54 @@ showcase_apply_scroll_registers:
 showcase_render_sprite:
     ld hl, SZ_VDP_SAT_BASE
     call vdp_set_address
-    ld a, (SHOWCASE_SPRITE_Y)
-    call vdp_write_vram
-    ld a, (SHOWCASE_SPRITE_X)
-    call vdp_write_vram
+
     ld a, (SHOWCASE_SPRITE_FRAME)
+    add a, a
+    add a, a
     add a, showcase_demo_sprite_tile_base
+    ld d, a
+
+    ld a, (SHOWCASE_META_X)
+    ld b, a
+    ld c, d
+    ld a, (SHOWCASE_META_Y)
+    call showcase_render_sprite_entry
+
+    ld a, (SHOWCASE_META_X)
+    add a, SHOWCASE_METASPRITE_RIGHT_X
+    ld b, a
+    ld a, d
+    inc a
+    ld c, a
+    ld a, (SHOWCASE_META_Y)
+    call showcase_render_sprite_entry
+
+    ld a, (SHOWCASE_META_X)
+    ld b, a
+    ld a, d
+    add a, 2
+    ld c, a
+    ld a, (SHOWCASE_META_Y)
+    add a, SHOWCASE_METASPRITE_BOTTOM_Y
+    call showcase_render_sprite_entry
+
+    ld a, (SHOWCASE_META_X)
+    add a, SHOWCASE_METASPRITE_RIGHT_X
+    ld b, a
+    ld a, d
+    add a, 3
+    ld c, a
+    ld a, (SHOWCASE_META_Y)
+    add a, SHOWCASE_METASPRITE_BOTTOM_Y
+    call showcase_render_sprite_entry
+    ret
+
+showcase_render_sprite_entry:
     call vdp_write_vram
-    ld a, SHOWCASE_SPRITE_FLAGS
+    ld a, b
+    call vdp_write_vram
+    ld a, c
+    call vdp_write_vram
+    ld a, SHOWCASE_METASPRITE_FLAGS
     call vdp_write_vram
     ret

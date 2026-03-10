@@ -34,13 +34,13 @@ showcase_update:
     inc a
     inc a
     ld (SHOWCASE_FOREGROUND_SCROLL_X), a
-    ld a, (SHOWCASE_SPRITE_X)
+    ld a, (SHOWCASE_META_X)
     inc a
-    ld (SHOWCASE_SPRITE_X), a
+    ld (SHOWCASE_META_X), a
 
     ld a, (SHOWCASE_SPRITE_ANIM_COUNTER)
     inc a
-    cp SHOWCASE_SPRITE_ANIM_PERIOD
+    cp SHOWCASE_METASPRITE_ANIM_PERIOD
     jr c, .store_anim_counter
 
     xor a
