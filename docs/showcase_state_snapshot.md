@@ -1,10 +1,10 @@
 # Showcase State Snapshot
 
 ## Current Milestone
-M39
+M40
 
 ## Status
-Ready for execution. The official next Showcase milestone remains `M39 - PSG Sound Effects`.
+`M39 - PSG Sound Effects` is complete. The official next Showcase milestone is `M40 - YM2151 Music Playback`.
 
 ## SDK Runtime Surface
 - `sdk/inc/` now contains real public include files for the base platform, VDP, and controller input contracts.
@@ -65,8 +65,14 @@ Ready for execution. The official next Showcase milestone remains `M39 - PSG Sou
 - Headless execution still sees idle controller state (`0xFF`), so repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 24` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xA48747B5 ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
 - This work is preserved as `M38a - Controller Interaction Enhancement` and is not the official `M39` milestone.
 
+## M39 - PSG Sound Effects
+- `showcase_init` now includes an explicit ROM-local PSG setup step that initializes channel periods to zero, silences all PSG outputs, enables the PSG control register, and seeds deterministic `SHOWCASE_PAD1_PREV_STATE` and `SHOWCASE_SFX_TIMER` RAM bytes.
+- `showcase_update` now runs a narrow sound-effect path before the existing parallax, movement, and animation work, checking `PAD1` button `A` on an active-low press edge so the tone starts once per press instead of restarting every frame while held.
+- The sound effect uses direct PSG register writes on tone channel A only: period `$0060`, volume `$02`, and a fixed `10`-frame duration before the ROM restores channel A to `SZ_AUD_VOL_SILENT`.
+- Headless execution with idle input still produces identical repeated output because no trigger edge occurs: `HEADLESS_ROM_RESULT rom_crc32=0xCDD4CAD9 ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
+
 ## Result
-The Showcase ROM now includes preserved controller-driven metasprite movement recorded as `M38a - Controller Interaction Enhancement` on top of the completed metasprite example. The next official Showcase milestone remains `M39 - PSG Sound Effects`.
+The Showcase ROM now demonstrates deterministic PSG register usage alongside the preserved parallax and controller-driven metasprite scene. `M39 - PSG Sound Effects` is complete, and the next official Showcase milestone is `M40 - YM2151 Music Playback`.
 
 ## Recommendation
-Proceed to `M39 - PSG Sound Effects` per `docs/plan.md`.
+Proceed to `M40 - YM2151 Music Playback` per `docs/plan.md`.

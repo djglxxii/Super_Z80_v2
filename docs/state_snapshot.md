@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M39
+M40
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,11 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M39 complete.
+- The Showcase ROM now performs an explicit ROM-local PSG initialization step during boot, leaving all channels silent, enabling PSG output deterministically, and seeding `SHOWCASE_PAD1_PREV_STATE` plus `SHOWCASE_SFX_TIMER` in RAM.
+- `showcase_update` now checks `PAD1` button `A` on a press edge before the existing scene update logic, writes tone channel A period `$0060` and volume `$02` directly to PSG ports, and stops the effect after a fixed `10`-frame countdown without disturbing parallax, metasprite movement, or sprite animation.
+- Headless execution still receives idle controller state, so repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 24` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xCDD4CAD9 ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
+- The next official Showcase milestone is now `M40 - YM2151 Music Playback`.
 - Showcase controller-input enhancement reconciled as `M38a - Controller Interaction Enhancement` after `M38`.
 - The Showcase ROM now uses the existing once-per-frame PAD1 polling path to drive the metasprite origin directly from active-low directional input, storing the sampled controller state in deterministic RAM before update/render work runs.
 - `showcase_update` now applies `LEFT`/`RIGHT` to `meta_x` and `UP`/`DOWN` to `meta_y` in `1`-pixel steps per frame while leaving the validated parallax background/foreground scroll updates and the fixed `8`-frame animation cadence unchanged.
@@ -255,7 +260,9 @@ PCM remains excluded from the platform design.
 None yet.
 
 ## Verification Status
-Showcase milestone reconciliation verification is passing with the required repository-truth checks: `git status --short` and `rg -n "M39|M38a|controller input|PSG Sound Effects|Metasprite" docs artifacts/reports rom/showcase -S`. The controller-driven metasprite work remains documented as `M38a - Controller Interaction Enhancement`, and the next official Showcase milestone remains `M39 - PSG Sound Effects`.
+M39 PSG sound effects verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `make -C rom/showcase clean`, `make -C rom/showcase`, and repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 24`. The Showcase ROM now verifies successful repository build/test execution, explicit ROM-local PSG initialization, edge-triggered tone-A sound-effect writes on button `A`, successful ROM assembly, and stable repeated headless execution with no input-triggered audio events.
+
+Showcase milestone reconciliation verification is passing with the required repository-truth checks: `git status --short` and `rg -n "M40|M39|M38a|controller input|PSG Sound Effects|Metasprite" docs artifacts/reports rom/showcase -S`. The controller-driven metasprite work remains documented as `M38a - Controller Interaction Enhancement`, `M39 - PSG Sound Effects` is now complete, and the next official Showcase milestone is `M40 - YM2151 Music Playback`.
 
 M36 basic sprite rendering verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `make -C rom/showcase clean`, `make -C rom/showcase`, and repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 12`. The Showcase ROM now verifies successful repository build/test execution, explicit VRAM base uploads, stable per-frame SAT updates, visible sprite motion over the parallax scene, successful ROM assembly, and stable repeated headless execution for the sprite demo.
 

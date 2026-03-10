@@ -24,6 +24,8 @@ showcase_poll_input:
     ret
 
 showcase_update:
+    call showcase_update_sfx
+
     ld a, (SHOWCASE_BACKGROUND_SCROLL_X)
     inc a
     ld (SHOWCASE_BACKGROUND_SCROLL_X), a
@@ -73,10 +75,53 @@ showcase_update:
     ld a, (SHOWCASE_SPRITE_FRAME)
     xor 1
     ld (SHOWCASE_SPRITE_FRAME), a
-    ret
+    jr showcase_store_pad1_prev_state
 
 .store_anim_counter
     ld (SHOWCASE_SPRITE_ANIM_COUNTER), a
+showcase_store_pad1_prev_state:
+    ld a, (SHOWCASE_PAD1_STATE)
+    ld (SHOWCASE_PAD1_PREV_STATE), a
+    ret
+
+showcase_update_sfx:
+    ld a, (SHOWCASE_SFX_TIMER)
+    or a
+    jr z, .check_trigger
+
+    dec a
+    ld (SHOWCASE_SFX_TIMER), a
+    jr nz, .check_trigger
+    call showcase_stop_sfx
+
+.check_trigger
+    ld a, (SHOWCASE_PAD1_STATE)
+    and SHOWCASE_SFX_TRIGGER_MASK
+    jr nz, .done
+
+    ld a, (SHOWCASE_PAD1_PREV_STATE)
+    and SHOWCASE_SFX_TRIGGER_MASK
+    jr z, .done
+
+    call showcase_start_sfx
+
+.done
+    ret
+
+showcase_start_sfx:
+    ld a, SHOWCASE_SFX_TONE_A_PERIOD_LO
+    out (SZ_PORT_AUD_TONE_A_LOW), a
+    ld a, SHOWCASE_SFX_TONE_A_PERIOD_HI
+    out (SZ_PORT_AUD_TONE_A_HIGH), a
+    ld a, SHOWCASE_SFX_TONE_A_VOLUME
+    out (SZ_PORT_AUD_VOL_A), a
+    ld a, SHOWCASE_SFX_DURATION_FRAMES
+    ld (SHOWCASE_SFX_TIMER), a
+    ret
+
+showcase_stop_sfx:
+    ld a, SZ_AUD_VOL_SILENT
+    out (SZ_PORT_AUD_VOL_A), a
     ret
 
 showcase_render:

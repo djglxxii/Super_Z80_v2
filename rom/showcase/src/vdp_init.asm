@@ -45,6 +45,27 @@ showcase_reset_sprite_state:
     ld (SHOWCASE_SPRITE_ANIM_COUNTER), a
     ret
 
+showcase_init_audio_state:
+    ld a, SZ_PAD_IDLE
+    ld (SHOWCASE_PAD1_PREV_STATE), a
+    xor a
+    ld (SHOWCASE_SFX_TIMER), a
+    out (SZ_PORT_AUD_TONE_A_LOW), a
+    out (SZ_PORT_AUD_TONE_A_HIGH), a
+    out (SZ_PORT_AUD_TONE_B_LOW), a
+    out (SZ_PORT_AUD_TONE_B_HIGH), a
+    out (SZ_PORT_AUD_TONE_C_LOW), a
+    out (SZ_PORT_AUD_TONE_C_HIGH), a
+    out (SZ_PORT_AUD_NOISE_CTRL), a
+    ld a, SZ_AUD_VOL_SILENT
+    out (SZ_PORT_AUD_VOL_A), a
+    out (SZ_PORT_AUD_VOL_B), a
+    out (SZ_PORT_AUD_VOL_C), a
+    out (SZ_PORT_AUD_VOL_N), a
+    ld a, SZ_AUD_CTRL_ENABLE
+    out (SZ_PORT_AUD_CTRL), a
+    ret
+
 showcase_init_palette:
     SZ_VDP_SET_PALETTE_RGBA 0, $08, $0C, $20, $FF
     SZ_VDP_SET_PALETTE_RGBA 1, $E8, $F0, $FF, $FF
