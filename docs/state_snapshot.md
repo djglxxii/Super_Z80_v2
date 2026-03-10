@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M38
+M39
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,10 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M39 complete.
+- The Showcase ROM now uses the existing once-per-frame PAD1 polling path to drive the metasprite origin directly from active-low directional input, storing the sampled controller state in deterministic RAM before update/render work runs.
+- `showcase_update` now applies `LEFT`/`RIGHT` to `meta_x` and `UP`/`DOWN` to `meta_y` in `1`-pixel steps per frame while leaving the validated parallax background/foreground scroll updates and the fixed `8`-frame animation cadence unchanged.
+- Headless execution still receives the deterministic idle controller state, so repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 24` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xA48747B5 ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
 - M38 complete.
 - The Showcase ROM sprite demo now stores a single logical metasprite origin in deterministic `meta_x` and `meta_y` RAM state, with all four hardware sprites deriving their positions from that shared base plus fixed `8`-pixel offsets.
 - The local Showcase sprite asset now contains two `2x2` animation frames laid out as four `8x8` tiles per frame, so each SAT entry references its own tile while still forming one logical moving object.

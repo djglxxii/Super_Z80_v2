@@ -1,7 +1,7 @@
 # Showcase State Snapshot
 
 ## Current Milestone
-M38
+M39
 
 ## Status
 Completed.
@@ -58,8 +58,14 @@ Completed.
 - The existing M37 frame toggle cadence remains intact, but tile selection now advances the whole `2x2` metasprite in sync while the parallax scene and `+1` horizontal motion continue unchanged.
 - Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 20` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xBBF8B4A9 ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
 
+## Controller Input Demo
+- The main loop's existing per-frame `showcase_poll_input` step now directly drives Showcase movement through the stored active-low `SHOWCASE_PAD1_STATE` byte, keeping the input integration explicit and ROM-local.
+- `showcase_update` now applies `UP`, `DOWN`, `LEFT`, and `RIGHT` independently to `meta_y` and `meta_x`, moving the logical metasprite origin by exactly `1` pixel per pressed direction each frame and allowing deterministic diagonal motion.
+- The parallax layer updates and the fixed `8`-frame metasprite animation cadence remain unchanged, so movement is now controller-driven without altering scene composition or animation timing.
+- Headless execution still sees idle controller state (`0xFF`), so repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 24` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xA48747B5 ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
+
 ## Result
-M38 turns the Showcase ROM into a deterministic metasprite reference scene. The ROM now demonstrates a moving animated `2x2` sprite composition built from four coordinated SAT entries on top of the validated parallax background, while keeping the update/render path explicit and ROM-author friendly.
+M39 turns the Showcase ROM into a deterministic controller-input reference scene. The ROM now demonstrates per-frame input polling driving an animated `2x2` metasprite across the validated parallax background while preserving the existing explicit update/render structure.
 
 ## Recommendation
-Proceed to `M39 - Controller Input Demo`. The next step is using the existing input polling path to drive Showcase movement without breaking the deterministic scene and metasprite update pattern.
+Proceed to `M40 - Controller Action Demo` or the next `docs/plan.md` Showcase milestone that builds on visible controller interaction without widening the ROM architecture prematurely.

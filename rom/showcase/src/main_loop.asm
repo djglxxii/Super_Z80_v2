@@ -34,10 +34,35 @@ showcase_update:
     inc a
     inc a
     ld (SHOWCASE_FOREGROUND_SCROLL_X), a
-    ld a, (SHOWCASE_META_X)
-    inc a
-    ld (SHOWCASE_META_X), a
 
+    ld a, (SHOWCASE_PAD1_STATE)
+    bit 2, a
+    jr nz, .check_right
+    ld hl, SHOWCASE_META_X
+    dec (hl)
+
+.check_right
+    ld a, (SHOWCASE_PAD1_STATE)
+    bit 3, a
+    jr nz, .check_up
+    ld hl, SHOWCASE_META_X
+    inc (hl)
+
+.check_up
+    ld a, (SHOWCASE_PAD1_STATE)
+    bit 0, a
+    jr nz, .check_down
+    ld hl, SHOWCASE_META_Y
+    dec (hl)
+
+.check_down
+    ld a, (SHOWCASE_PAD1_STATE)
+    bit 1, a
+    jr nz, .update_animation
+    ld hl, SHOWCASE_META_Y
+    inc (hl)
+
+.update_animation
     ld a, (SHOWCASE_SPRITE_ANIM_COUNTER)
     inc a
     cp SHOWCASE_METASPRITE_ANIM_PERIOD
