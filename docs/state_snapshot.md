@@ -36,6 +36,11 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M43 complete.
+- The Showcase ROM source is now annotated as the developer reference implementation, with comments that explain startup ordering, deterministic frame sequencing, CPU-side scene composition, VRAM upload order, metasprite SAT expansion, and the separation between update logic and hardware-visible render writes.
+- Added `docs/showcase_programmers_guide.md` as the programmer-facing reference for the Showcase ROM, covering build flow, source layout, text rendering, scrolling/parallax, metasprites, controller input, PSG sound effects, YM2151 playback, the integrated scene, and deterministic verification commands.
+- Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 48` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
+- The Showcase ROM is now considered the canonical developer reference ROM for the platform.
 - M42 complete.
 - The Showcase ROM now uses a foreground text overlay that explicitly identifies the scene as the `SUPER Z80 PLATFORM SHOWCASE`, documents `D-PAD MOVE  A:SOUND`, and calls out that YM2151 music and PSG sound effects are active together.
 - Existing Phase 5 behavior is now presented as one coherent final demo scene without changing hardware behavior: the parallax background/foreground scroll updates, controller-driven metasprite movement, sprite animation cadence, YM2151 note loop, and PSG `A`-button edge trigger all remain in the same deterministic frame order.

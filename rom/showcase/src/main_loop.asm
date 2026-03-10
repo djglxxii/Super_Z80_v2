@@ -1,4 +1,9 @@
 showcase_main_loop:
+    ; Deterministic frame contract:
+    ; 1. Wait for the next visible frame boundary.
+    ; 2. Sample controller state once.
+    ; 3. Advance all ROM-owned state once.
+    ; 4. Emit scroll and SAT updates for the new frame.
     call showcase_wait_vblank
     call showcase_poll_input
     call showcase_update
@@ -24,9 +29,13 @@ showcase_poll_input:
     ret
 
 showcase_update:
+    ; Audio updates run before scene motion so button edges and music timing are
+    ; both derived from the same freshly-sampled controller/frame state.
     call showcase_update_sfx
     call showcase_update_music
 
+    ; Background and foreground scroll at different speeds to make the plane
+    ; separation obvious on real hardware and in headless captures.
     ld a, (SHOWCASE_BACKGROUND_SCROLL_X)
     inc a
     ld (SHOWCASE_BACKGROUND_SCROLL_X), a
@@ -66,6 +75,7 @@ showcase_update:
     inc (hl)
 
 .update_animation
+    ; The metasprite toggles between two 2x2 frames on a fixed cadence.
     ld a, (SHOWCASE_SPRITE_ANIM_COUNTER)
     inc a
     cp SHOWCASE_METASPRITE_ANIM_PERIOD
@@ -86,6 +96,8 @@ showcase_store_pad1_prev_state:
     ret
 
 showcase_update_sfx:
+    ; Trigger the PSG effect only on the A-button press edge so holding the
+    ; button does not continuously restart the tone.
     ld a, (SHOWCASE_SFX_TIMER)
     or a
     jr z, .check_trigger
@@ -110,6 +122,7 @@ showcase_update_sfx:
     ret
 
 showcase_start_sfx:
+    ; Use channel A only so the example remains small and isolated.
     ld a, SHOWCASE_SFX_TONE_A_PERIOD_LO
     out (SZ_PORT_AUD_TONE_A_LOW), a
     ld a, SHOWCASE_SFX_TONE_A_PERIOD_HI
@@ -179,6 +192,7 @@ showcase_init_music:
     jp showcase_start_music_note
 
 showcase_update_music:
+    ; The music path is intentionally a tiny fixed-step loop, not a song engine.
     ld a, (SHOWCASE_MUSIC_NOTE_TIMER)
     or a
     jr z, .advance_note
@@ -199,6 +213,7 @@ showcase_update_music:
     jp showcase_start_music_note
 
 showcase_start_music_note:
+    ; Each pattern entry stores low-byte then block/frequency bits for channel 0.
     ld a, (SHOWCASE_MUSIC_NOTE_INDEX)
     add a, a
     ld e, a
@@ -232,6 +247,8 @@ showcase_ym_write:
     ret
 
 showcase_render:
+    ; Only hardware-visible state is written here. The tilemaps stay resident in
+    ; VRAM after boot; per-frame rendering only updates scroll registers and SAT.
     call showcase_apply_scroll_registers
     call showcase_render_sprite
     ret

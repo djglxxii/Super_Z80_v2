@@ -1,6 +1,8 @@
 showcase_font_8x8_first_ascii EQU $20
 showcase_font_8x8_last_ascii  EQU $7F
 
+; Tile upload order defines tile indices used later by the text and sprite code:
+; font tiles first, splash tiles second, metasprite tiles last.
 showcase_font_8x8:
     INCLUDE "assets/font_8x8.asm"
 showcase_font_8x8_end:
@@ -17,6 +19,7 @@ showcase_demo_sprite_tiles_end:
 showcase_demo_sprite_tile_count EQU (showcase_demo_sprite_tiles_end - showcase_demo_sprite_tiles) / 64
 
 showcase_vdp_init_registers:
+    ; Reset local VDP-facing state to the baseline used by the ROM.
     xor a
     out (SZ_PORT_VDP_CONTROL), a
     out (SZ_PORT_VDP_BG_SCROLL_X), a
@@ -46,6 +49,8 @@ showcase_reset_sprite_state:
     ret
 
 showcase_init_audio_state:
+    ; Seed RAM bookkeeping first, silence PSG outputs, then enable the audio
+    ; block and initialize the YM2151 example voice.
     ld a, SZ_PAD_IDLE
     ld (SHOWCASE_PAD1_PREV_STATE), a
     xor a
@@ -79,6 +84,9 @@ showcase_init_palette:
     ret
 
 showcase_upload_scene_to_vram:
+    ; Upload static assets once at boot. The frame loop only rewrites scroll
+    ; registers and SAT bytes, so the initial upload order is part of the ROM
+    ; contract documented in the programmer guide.
     ld hl, SHOWCASE_VRAM_START
     call vdp_set_address
 
@@ -175,6 +183,8 @@ showcase_apply_scroll_registers:
     ret
 
 showcase_render_sprite:
+    ; The logical metasprite origin is stored once in RAM and expanded here into
+    ; four hardware sprites with fixed 8-pixel offsets.
     ld hl, SZ_VDP_SAT_BASE
     call vdp_set_address
 

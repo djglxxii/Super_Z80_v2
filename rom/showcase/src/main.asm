@@ -1,4 +1,8 @@
-; Super_Z80 Showcase ROM scaffold entry point.
+; Super_Z80 Showcase ROM entry point.
+;
+; The runtime jumps to sdk_main after reset and basic hardware setup. This
+; file is intentionally small so developers can see the high-level ROM layout:
+; boot, initialize the scene, then run one deterministic frame loop forever.
 
     INCLUDE "inc/super_z80.inc"
     INCLUDE "runtime/inc/runtime.inc"

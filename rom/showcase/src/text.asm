@@ -11,6 +11,8 @@ showcase_text_newline       EQU $0A
 showcase_text_blank_tile    EQU $00
 
 showcase_compose_parallax_scene:
+    ; Compose both planes in RAM first, then upload once during boot. Keeping
+    ; composition CPU-side makes the text helpers simple and deterministic.
     call showcase_select_bg_buffer
     call showcase_text_clear_buffer
     call showcase_select_fg_buffer
@@ -115,6 +117,7 @@ showcase_text_write_line_at:
     pop bc
 
 showcase_text_write_string_at:
+    ; Writes a zero-terminated string without storing hidden cursor state.
     call showcase_text_get_xy_address
     ld a, b
     push af
@@ -161,6 +164,7 @@ showcase_text_get_xy_address:
     ret
 
 showcase_text_get_row_address:
+    ; Advance one tilemap row at a time from the currently selected plane buffer.
     ld hl, (SHOWCASE_TEXT_BUFFER_PTR)
     ld a, c
 .row_loop

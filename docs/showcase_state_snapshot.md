@@ -4,7 +4,12 @@
 M43
 
 ## Status
-`M42 - Integrated Showcase Scene` is complete. The official next Showcase milestone is `M43 - Developer Reference ROM Finalization`.
+`M43 - Developer Reference ROM Finalization` is complete. The Showcase ROM is now the canonical developer-reference ROM for the platform.
+
+## M43 - Developer Reference ROM Finalization
+- `docs/showcase_programmers_guide.md` now documents the ROM as a developer-facing reference, covering boot flow, source layout, text rendering, scrolling, parallax, metasprites, controller input, PSG sound effects, YM2151 playback, the integrated scene, and deterministic verification commands.
+- The Showcase ROM source files now include focused explanatory comments around startup sequencing, frame-step ordering, CPU-side tilemap composition, VRAM upload order, metasprite expansion, and the separation between ROM-owned update state and hardware-visible render writes.
+- The ROM remains functionally equivalent to the M42 integrated scene: the same parallax scroll rates, controller-driven metasprite movement, fixed animation cadence, PSG trigger path, and YM2151 loop are preserved.
 
 ## SDK Runtime Surface
 - `sdk/inc/` now contains real public include files for the base platform, VDP, and controller input contracts.
@@ -89,7 +94,7 @@ M43
 - Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 48` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
 
 ## Result
-The Showcase ROM now runs as a complete interactive platform demo: parallax scrolling stays active, the metasprite remains controller-driven and animated, YM2151 music loops continuously, PSG sound effects trigger on `PAD1 A` without resetting music, and the foreground text overlay documents the controls and integrated audio scene. `M42 - Integrated Showcase Scene` is complete, and the next official Showcase milestone is `M43 - Developer Reference ROM Finalization`.
+The Showcase ROM now runs as a complete interactive platform demo and a documented reference implementation: parallax scrolling stays active, the metasprite remains controller-driven and animated, YM2151 music loops continuously, PSG sound effects trigger on `PAD1 A` without resetting music, and the source plus programmer guide now explain where each behavior lives. `M43 - Developer Reference ROM Finalization` is complete.
 
 ## Recommendation
-Proceed to `M43 - Developer Reference ROM Finalization` per `docs/plan.md`.
+Treat `rom/showcase/` and `docs/showcase_programmers_guide.md` as the canonical starting point for future developer-facing ROM examples and documentation.
