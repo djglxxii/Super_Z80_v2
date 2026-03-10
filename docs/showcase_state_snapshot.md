@@ -1,10 +1,10 @@
 # Showcase State Snapshot
 
 ## Current Milestone
-M41
+M42
 
 ## Status
-`M40 - YM2151 Music Playback` is complete. The official next Showcase milestone is `M41 - Audio Mixing Demonstration`.
+`M41 - Audio Mixing Demonstration` is complete. The official next Showcase milestone is `M42 - Integrated Showcase Scene`.
 
 ## SDK Runtime Surface
 - `sdk/inc/` now contains real public include files for the base platform, VDP, and controller input contracts.
@@ -77,8 +77,13 @@ M41
 - A small four-note YM2151 pattern loops continuously by rewriting channel `0` frequency/block registers and retriggering all four operators every `16` frames, providing clear continuous FM playback without introducing a song engine.
 - Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 32` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xFCEDF42B ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
 
+## M41 - Audio Mixing Demonstration
+- The Showcase ROM's frame update now demonstrably preserves independent PSG and YM state progression: `showcase_update_sfx` handles PAD1 `A` edge-triggered tone playback while `showcase_update_music` continues advancing the four-note YM2151 loop in the same deterministic frame step.
+- The ROM-local PSG writes remain confined to the PSG ports and timer byte, while YM2151 note updates remain confined to `0x70-0x71` register writes and the two music state bytes, so neither path resets or silences the other.
+- Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 32` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xFCEDF42B ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
+
 ## Result
-The Showcase ROM now demonstrates continuous deterministic YM2151 music playback alongside the preserved parallax scene, controller-driven metasprite movement, animation, and the existing PSG sound-effect path. `M40 - YM2151 Music Playback` is complete, and the next official Showcase milestone is `M41 - Audio Mixing Demonstration`.
+The Showcase ROM now demonstrates continuous deterministic YM2151 music playback, PAD-triggered PSG sound effects, and simultaneous mixed audio alongside the preserved parallax scene, controller-driven metasprite movement, and animation. `M41 - Audio Mixing Demonstration` is complete, and the next official Showcase milestone is `M42 - Integrated Showcase Scene`.
 
 ## Recommendation
-Proceed to `M41 - Audio Mixing Demonstration` per `docs/plan.md`.
+Proceed to `M42 - Integrated Showcase Scene` per `docs/plan.md`.

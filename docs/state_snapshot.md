@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M41
+M42
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,10 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M41 complete.
+- Verified the Showcase ROM's existing frame update already demonstrates simultaneous audio mixing by running the YM2151 music step and PSG sound-effect step independently in the same deterministic loop without shared register state.
+- Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 32` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xFCEDF42B ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
+- The next official Showcase milestone is now `M42 - Integrated Showcase Scene`.
 - M40 complete.
 - The Showcase ROM now initializes deterministic FM playback state during boot by disabling YM2151 timers, keying off all channels, and programming a minimal channel `0` voice through explicit ROM-local register writes before the existing scene starts.
 - `showcase_update` now includes a narrow `showcase_update_music` step that advances `SHOWCASE_MUSIC_NOTE_INDEX` and `SHOWCASE_MUSIC_NOTE_TIMER` once per frame, keeping the FM behavior deterministic and easy to study without changing the existing parallax, metasprite, controller, or PSG sound-effect flows.
