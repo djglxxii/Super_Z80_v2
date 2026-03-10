@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M40
+M41
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,12 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M40 complete.
+- The Showcase ROM now initializes deterministic FM playback state during boot by disabling YM2151 timers, keying off all channels, and programming a minimal channel `0` voice through explicit ROM-local register writes before the existing scene starts.
+- `showcase_update` now includes a narrow `showcase_update_music` step that advances `SHOWCASE_MUSIC_NOTE_INDEX` and `SHOWCASE_MUSIC_NOTE_TIMER` once per frame, keeping the FM behavior deterministic and easy to study without changing the existing parallax, metasprite, controller, or PSG sound-effect flows.
+- The Showcase ROM now runs a continuous four-note YM2151 loop on channel `0`, rewriting frequency/block registers and retriggering all four operators every `16` frames so the scene carries simple background music without adding a generalized music engine.
+- Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 32` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xFCEDF42B ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
+- The next official Showcase milestone is now `M41 - Audio Mixing Demonstration`.
 - M39 complete.
 - The Showcase ROM now performs an explicit ROM-local PSG initialization step during boot, leaving all channels silent, enabling PSG output deterministically, and seeding `SHOWCASE_PAD1_PREV_STATE` plus `SHOWCASE_SFX_TIMER` in RAM.
 - `showcase_update` now checks `PAD1` button `A` on a press edge before the existing scene update logic, writes tone channel A period `$0060` and volume `$02` directly to PSG ports, and stops the effect after a fixed `10`-frame countdown without disturbing parallax, metasprite movement, or sprite animation.

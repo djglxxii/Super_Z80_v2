@@ -50,6 +50,8 @@ showcase_init_audio_state:
     ld (SHOWCASE_PAD1_PREV_STATE), a
     xor a
     ld (SHOWCASE_SFX_TIMER), a
+    ld (SHOWCASE_MUSIC_NOTE_INDEX), a
+    ld (SHOWCASE_MUSIC_NOTE_TIMER), a
     out (SZ_PORT_AUD_TONE_A_LOW), a
     out (SZ_PORT_AUD_TONE_A_HIGH), a
     out (SZ_PORT_AUD_TONE_B_LOW), a
@@ -64,6 +66,7 @@ showcase_init_audio_state:
     out (SZ_PORT_AUD_VOL_N), a
     ld a, SZ_AUD_CTRL_ENABLE
     out (SZ_PORT_AUD_CTRL), a
+    call showcase_init_music
     ret
 
 showcase_init_palette:

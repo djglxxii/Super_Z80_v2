@@ -25,6 +25,7 @@ showcase_poll_input:
 
 showcase_update:
     call showcase_update_sfx
+    call showcase_update_music
 
     ld a, (SHOWCASE_BACKGROUND_SCROLL_X)
     inc a
@@ -124,7 +125,119 @@ showcase_stop_sfx:
     out (SZ_PORT_AUD_VOL_A), a
     ret
 
+showcase_init_music:
+    ; Put the YM2151 in a known ROM-local state before starting channel 0.
+    ld b, $14
+    ld c, $30
+    call showcase_ym_write
+
+    ld b, $28
+.key_off_channels
+    ld c, SHOWCASE_YM_KEY_OFF
+    call showcase_ym_write
+    inc b
+    ld a, b
+    cp $30
+    jr nz, .key_off_channels
+
+    ld b, $20
+    ld c, SHOWCASE_YM_CH0_ALG_FEEDBACK
+    call showcase_ym_write
+
+    ld b, $40
+    ld c, SHOWCASE_YM_CH0_OPERATOR_DT_MUL
+    call showcase_ym_write
+    ld b, $48
+    call showcase_ym_write
+    ld b, $50
+    call showcase_ym_write
+    ld b, $58
+    call showcase_ym_write
+
+    ld b, $80
+    ld c, SHOWCASE_YM_CH0_OPERATOR_ATTACK
+    call showcase_ym_write
+    ld b, $88
+    call showcase_ym_write
+    ld b, $90
+    call showcase_ym_write
+    ld b, $98
+    call showcase_ym_write
+
+    ld b, $E0
+    ld c, SHOWCASE_YM_CH0_OPERATOR_RELEASE
+    call showcase_ym_write
+    ld b, $E8
+    call showcase_ym_write
+    ld b, $F0
+    call showcase_ym_write
+    ld b, $F8
+    call showcase_ym_write
+
+    xor a
+    ld (SHOWCASE_MUSIC_NOTE_INDEX), a
+    jp showcase_start_music_note
+
+showcase_update_music:
+    ld a, (SHOWCASE_MUSIC_NOTE_TIMER)
+    or a
+    jr z, .advance_note
+
+    dec a
+    ld (SHOWCASE_MUSIC_NOTE_TIMER), a
+    ret nz
+
+.advance_note
+    ld a, (SHOWCASE_MUSIC_NOTE_INDEX)
+    inc a
+    cp SHOWCASE_MUSIC_NOTE_COUNT
+    jr c, .store_note_index
+    xor a
+
+.store_note_index
+    ld (SHOWCASE_MUSIC_NOTE_INDEX), a
+    jp showcase_start_music_note
+
+showcase_start_music_note:
+    ld a, (SHOWCASE_MUSIC_NOTE_INDEX)
+    add a, a
+    ld e, a
+    ld d, 0
+    ld hl, showcase_music_pattern
+    add hl, de
+
+    ld b, $30
+    ld c, (hl)
+    call showcase_ym_write
+    inc hl
+    ld b, $38
+    ld c, (hl)
+    call showcase_ym_write
+
+    ld b, $28
+    ld c, SHOWCASE_YM_KEY_OFF
+    call showcase_ym_write
+    ld c, SHOWCASE_YM_KEY_ON_ALL_OPERATORS
+    call showcase_ym_write
+
+    ld a, SHOWCASE_MUSIC_STEP_FRAMES
+    ld (SHOWCASE_MUSIC_NOTE_TIMER), a
+    ret
+
+showcase_ym_write:
+    ld a, b
+    out (SZ_PORT_YM2151_ADDR), a
+    ld a, c
+    out (SZ_PORT_YM2151_DATA), a
+    ret
+
 showcase_render:
     call showcase_apply_scroll_registers
     call showcase_render_sprite
     ret
+
+showcase_music_pattern:
+    DB $AA, $0D
+    DB $D0, $0D
+    DB $10, $0E
+    DB $40, $0E
