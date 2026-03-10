@@ -44,7 +44,7 @@ showcase_compose_parallax_scene:
     ld hl, showcase_status_text
     ld b, SHOWCASE_STATUS_TEXT_X
     ld c, SHOWCASE_STATUS_TEXT_Y
-    call showcase_fg_text_write_line_at
+    call showcase_fg_text_write_string_at
 
     ld hl, showcase_background_label_text
     ld b, SHOWCASE_BACKGROUND_LABEL_X
@@ -88,6 +88,10 @@ showcase_bg_text_write_string_at:
 showcase_fg_text_write_line_at:
     call showcase_select_fg_buffer
     jp showcase_text_write_line_at
+
+showcase_fg_text_write_string_at:
+    call showcase_select_fg_buffer
+    jp showcase_text_write_string_at
 
 showcase_text_clear_buffer:
     ld hl, (SHOWCASE_TEXT_BUFFER_PTR)
@@ -179,22 +183,22 @@ showcase_text_map_ascii_to_tile:
     ret
 
 showcase_title_text:
-    db "SUPER Z80 SHOWCASE", 0
+    db "SUPER Z80 PLATFORM SHOWCASE", 0
 
 showcase_status_text:
-    db "SPRITE RENDER OK", 0
+    db "D-PAD MOVE  A:SOUND", $0A, "YM+PSG MIX ACTIVE", 0
 
 showcase_background_label_text:
-    db "BG X1 Y1", 0
+    db "BG X1 Y1 PARALLAX", 0
 
 showcase_foreground_label_text:
-    db "FG X2 Y0 TOP", 0
+    db "FG X2 Y0 OVERLAY", 0
 
 showcase_fg_banner_top_text:
-    db "== SPRITE STAYS SCREEN-SPACE ==", 0
+    db "== METASPRITE + FM MUSIC ==", 0
 
 showcase_fg_banner_bottom_text:
-    db "-- PARALLAX + SPRITE OK --", 0
+    db "-- PSG SFX OVER FM LOOP --", 0
 
 showcase_bg_band_top_text:
     db ". + . + . + . + . + . + . + .", 0

@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M42
+M43
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,11 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M42 complete.
+- The Showcase ROM now uses a foreground text overlay that explicitly identifies the scene as the `SUPER Z80 PLATFORM SHOWCASE`, documents `D-PAD MOVE  A:SOUND`, and calls out that YM2151 music and PSG sound effects are active together.
+- Existing Phase 5 behavior is now presented as one coherent final demo scene without changing hardware behavior: the parallax background/foreground scroll updates, controller-driven metasprite movement, sprite animation cadence, YM2151 note loop, and PSG `A`-button edge trigger all remain in the same deterministic frame order.
+- Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 48` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
+- The next official Showcase milestone is now `M43 - Developer Reference ROM Finalization`.
 - M41 complete.
 - Verified the Showcase ROM's existing frame update already demonstrates simultaneous audio mixing by running the YM2151 music step and PSG sound-effect step independently in the same deterministic loop without shared register state.
 - Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 32` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xFCEDF42B ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
