@@ -38,4 +38,4 @@ Completed
 - No new issues were discovered during M38 implementation or verification.
 
 ## Next-Step Recommendation
-- Preserve any controller-driven metasprite follow-up as a non-milestone enhancement if needed, then proceed to `M39 - PSG Sound Effects` per `docs/plan.md`.
+- Preserve any controller-driven metasprite follow-up as `M38a - Controller Interaction Enhancement` if needed, then proceed to `M39 - PSG Sound Effects` per `docs/plan.md`.

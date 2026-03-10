@@ -58,15 +58,15 @@ Ready for execution. The official next Showcase milestone remains `M39 - PSG Sou
 - The existing M37 frame toggle cadence remains intact, but tile selection now advances the whole `2x2` metasprite in sync while the parallax scene and `+1` horizontal motion continue unchanged.
 - Repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 20` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xBBF8B4A9 ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
 
-## Controller Input Enhancement
+## M38a - Controller Interaction Enhancement
 - The main loop's existing per-frame `showcase_poll_input` step now directly drives Showcase movement through the stored active-low `SHOWCASE_PAD1_STATE` byte, keeping the input integration explicit and ROM-local.
 - `showcase_update` now applies `UP`, `DOWN`, `LEFT`, and `RIGHT` independently to `meta_y` and `meta_x`, moving the logical metasprite origin by exactly `1` pixel per pressed direction each frame and allowing deterministic diagonal motion.
 - The parallax layer updates and the fixed `8`-frame metasprite animation cadence remain unchanged, so movement is now controller-driven without altering scene composition or animation timing.
 - Headless execution still sees idle controller state (`0xFF`), so repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 24` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xA48747B5 ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
-- This work is preserved as an unplanned post-`M38` Showcase enhancement and is not the official `M39` milestone.
+- This work is preserved as `M38a - Controller Interaction Enhancement` and is not the official `M39` milestone.
 
 ## Result
-The Showcase ROM now includes a preserved controller-input enhancement on top of the completed metasprite example. The next official Showcase milestone remains `M39 - PSG Sound Effects`.
+The Showcase ROM now includes preserved controller-driven metasprite movement recorded as `M38a - Controller Interaction Enhancement` on top of the completed metasprite example. The next official Showcase milestone remains `M39 - PSG Sound Effects`.
 
 ## Recommendation
 Proceed to `M39 - PSG Sound Effects` per `docs/plan.md`.

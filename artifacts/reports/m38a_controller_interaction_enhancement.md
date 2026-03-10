@@ -1,4 +1,4 @@
-# Showcase Controller Input Enhancement Report
+# M38a Controller Interaction Enhancement Report
 
 Status: Completed
 
@@ -7,16 +7,16 @@ Status: Completed
 Requested milestone in stale packet/report: M39 Controller Input Demo
 Authoritative next milestone in docs/plan.md: M39 PSG Sound Effects
 Alignment result: CONFLICT
-Resolution: Reclassified controller-input work as non-milestone enhancement; preserved official M39 for PSG Sound Effects
+Resolution: Reclassified controller-input work as M38a - Controller Interaction Enhancement; preserved official M39 for PSG Sound Effects
 
-Extended the Showcase ROM so the existing once-per-frame controller polling path drives the animated metasprite as a post-M38 Showcase enhancement. Directional input updates `meta_x` and `meta_y` by one pixel per frame while the validated parallax scrolling and fixed animation cadence continue unchanged. Headless runs remain deterministic because idle controller state stays at `0xFF`.
+Recorded the preserved controller-driven Showcase ROM work as `M38a - Controller Interaction Enhancement` rather than the official `M39` milestone. Directional input updates `meta_x` and `meta_y` by one pixel per frame while the validated parallax scrolling and fixed animation cadence continue unchanged. Headless runs remain deterministic because idle controller state stays at `0xFF`.
 
 ## Files Changed
 
 - `rom/showcase/src/main_loop.asm`
 - `docs/showcase_state_snapshot.md`
 - `docs/state_snapshot.md`
-- `artifacts/reports/showcase_controller_input_enhancement.md`
+- `artifacts/reports/m38a_controller_interaction_enhancement.md`
 
 ## Commands Run
 
@@ -39,8 +39,8 @@ Extended the Showcase ROM so the existing once-per-frame controller polling path
 
 ## Exact Reconciliation Performed
 
-- Renamed the stale `M39` controller-input report so it no longer claims the official `M39` milestone.
-- Reclassified controller-driven metasprite movement as a non-milestone Showcase enhancement layered on top of completed `M38`.
+- Renamed the preserved controller-input report to `artifacts/reports/m38a_controller_interaction_enhancement.md`.
+- Reclassified controller-driven metasprite movement as `M38a - Controller Interaction Enhancement` layered on top of completed `M38`.
 - Updated repository snapshots so the next official Showcase milestone remains `M39 - PSG Sound Effects`.
 
 ## Issues Discovered
