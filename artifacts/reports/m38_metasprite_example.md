@@ -38,4 +38,4 @@ Completed
 - No new issues were discovered during M38 implementation or verification.
 
 ## Next-Step Recommendation
-- Proceed to `M39 - Controller Input Demo`, using the existing polling path to drive the Showcase metasprite without disturbing deterministic headless behavior.
+- Preserve any controller-driven metasprite follow-up as a non-milestone enhancement if needed, then proceed to `M39 - PSG Sound Effects` per `docs/plan.md`.

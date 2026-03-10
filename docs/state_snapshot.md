@@ -36,10 +36,11 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
-- M39 complete.
+- Showcase controller-input enhancement reconciled as non-milestone post-M38 work.
 - The Showcase ROM now uses the existing once-per-frame PAD1 polling path to drive the metasprite origin directly from active-low directional input, storing the sampled controller state in deterministic RAM before update/render work runs.
 - `showcase_update` now applies `LEFT`/`RIGHT` to `meta_x` and `UP`/`DOWN` to `meta_y` in `1`-pixel steps per frame while leaving the validated parallax background/foreground scroll updates and the fixed `8`-frame animation cadence unchanged.
 - Headless execution still receives the deterministic idle controller state, so repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 24` runs remain byte-identical with `HEADLESS_ROM_RESULT rom_crc32=0xA48747B5 ram_crc32=0x9A494230 audio_crc32=0xD8F49994`.
+- The next official Showcase milestone remains `M39 - PSG Sound Effects`.
 - M38 complete.
 - The Showcase ROM sprite demo now stores a single logical metasprite origin in deterministic `meta_x` and `meta_y` RAM state, with all four hardware sprites deriving their positions from that shared base plus fixed `8`-pixel offsets.
 - The local Showcase sprite asset now contains two `2x2` animation frames laid out as four `8x8` tiles per frame, so each SAT entry references its own tile while still forming one logical moving object.
@@ -254,6 +255,8 @@ PCM remains excluded from the platform design.
 None yet.
 
 ## Verification Status
+Showcase milestone reconciliation verification is passing with the required repository-truth checks: `git status --short` and `rg -n "M39|controller input|PSG Sound Effects|Metasprite" docs artifacts/reports rom/showcase -S`. The controller-driven metasprite work remains documented as a non-milestone enhancement, and the next official Showcase milestone remains `M39 - PSG Sound Effects`.
+
 M36 basic sprite rendering verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `make -C rom/showcase clean`, `make -C rom/showcase`, and repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 12`. The Showcase ROM now verifies successful repository build/test execution, explicit VRAM base uploads, stable per-frame SAT updates, visible sprite motion over the parallax scene, successful ROM assembly, and stable repeated headless execution for the sprite demo.
 
 M35 parallax scrolling verification is passing with the deterministic flow: `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build --output-on-failure`, `make -C rom/showcase clean`, `make -C rom/showcase`, and repeated `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 10`. The Showcase ROM now verifies successful repository build/test execution, two-layer BG/FG scene upload, independent per-frame layer scroll updates, successful ROM assembly, and stable repeated headless execution for the parallax demo.
