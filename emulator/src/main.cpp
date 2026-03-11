@@ -334,6 +334,18 @@ void print_controller_state(superz80::Bus& bus) {
               << std::dec << std::nouppercase << std::endl;
 }
 
+SDL_Renderer* create_window_renderer(SDL_Window* window) {
+    SDL_Renderer* renderer = SDL_CreateRenderer(
+        window,
+        -1,
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    if (renderer != nullptr) {
+        return renderer;
+    }
+
+    return SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+}
+
 int run_sdl_audio_shell(EmulatorCore& core) {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         std::cerr << "SDL initialization failed: " << SDL_GetError() << std::endl;
@@ -353,9 +365,18 @@ int run_sdl_audio_shell(EmulatorCore& core) {
         return 1;
     }
 
+    SDL_Renderer* renderer = create_window_renderer(window);
+    if (renderer == nullptr) {
+        std::cerr << "SDL renderer creation failed: " << SDL_GetError() << std::endl;
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
     superz80::frontend::Frontend frontend;
-    if (!frontend.initialize({"sdl-audio-shell"})) {
+    if (!frontend.initialize({"sdl-audio-shell", window, renderer})) {
         std::cerr << "Frontend initialization failed for SDL audio shell." << std::endl;
+        SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
@@ -365,6 +386,7 @@ int run_sdl_audio_shell(EmulatorCore& core) {
     if (!audio_output.initialize()) {
         std::cerr << "SDL audio device open failed: " << SDL_GetError() << std::endl;
         frontend.shutdown();
+        SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
@@ -384,6 +406,8 @@ int run_sdl_audio_shell(EmulatorCore& core) {
 
         SDL_Event event;
         while (SDL_PollEvent(&event) == 1) {
+            frontend.handle_event(event);
+
             if (event.type == SDL_QUIT) {
                 running = false;
             } else if (event.type == SDL_KEYDOWN && event.key.repeat == 0 &&
@@ -393,6 +417,10 @@ int run_sdl_audio_shell(EmulatorCore& core) {
         }
 
         pump_audio_output(core, audio_output);
+        SDL_SetRenderDrawColor(renderer, 12, 16, 20, 255);
+        SDL_RenderClear(renderer);
+        frontend.render();
+        SDL_RenderPresent(renderer);
         frontend.end_frame();
 
         SDL_Delay(1);
@@ -400,6 +428,7 @@ int run_sdl_audio_shell(EmulatorCore& core) {
 
     audio_output.shutdown();
     frontend.shutdown();
+    SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
@@ -424,9 +453,18 @@ int run_sdl_input_shell(EmulatorCore& core) {
         return 1;
     }
 
+    SDL_Renderer* renderer = create_window_renderer(window);
+    if (renderer == nullptr) {
+        std::cerr << "SDL renderer creation failed: " << SDL_GetError() << std::endl;
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
     superz80::frontend::Frontend frontend;
-    if (!frontend.initialize({"sdl-input-shell"})) {
+    if (!frontend.initialize({"sdl-input-shell", window, renderer})) {
         std::cerr << "Frontend initialization failed for SDL input shell." << std::endl;
+        SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
@@ -451,6 +489,7 @@ int run_sdl_input_shell(EmulatorCore& core) {
 
         SDL_Event event;
         while (SDL_PollEvent(&event) == 1) {
+            frontend.handle_event(event);
             bool state_changed = false;
 
             switch (event.type) {
@@ -490,6 +529,10 @@ int run_sdl_input_shell(EmulatorCore& core) {
             }
         }
 
+        SDL_SetRenderDrawColor(renderer, 12, 16, 20, 255);
+        SDL_RenderClear(renderer);
+        frontend.render();
+        SDL_RenderPresent(renderer);
         frontend.end_frame();
 
         SDL_Delay(16);
@@ -499,6 +542,7 @@ int run_sdl_input_shell(EmulatorCore& core) {
         SDL_GameControllerClose(controller);
     }
     frontend.shutdown();
+    SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;

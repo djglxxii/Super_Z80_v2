@@ -79,3 +79,13 @@
 - Rationale: SDL2 is a widely used, stable, and portable library suited to shell-layer concerns.
 - Supersedes: None
 - Superseded By: None
+
+## ADR-0008
+- ID: ADR-0008
+- Date: 2026-03-11
+- Status: Accepted
+- Context: The frontend milestones require a lightweight immediate-mode UI for deterministic debugging overlays without pushing UI concerns into the emulator core.
+- Decision: Vendor Dear ImGui into `emulator/vendor/imgui/` and restrict its use to the frontend and SDL shell layer.
+- Rationale: Dear ImGui provides a small, maintainable UI bring-up path for debugging tools while keeping the deterministic emulator core UI-independent.
+- Supersedes: None
+- Superseded By: None

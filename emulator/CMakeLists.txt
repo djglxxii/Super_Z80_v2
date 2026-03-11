@@ -181,6 +181,10 @@ add_library(super_z80_core
 add_library(super_z80_frontend
     frontend/debug_panels/debug_panel_host.cpp
     frontend/frontend.cpp
+    vendor/imgui/imgui.cpp
+    vendor/imgui/imgui_draw.cpp
+    vendor/imgui/imgui_tables.cpp
+    vendor/imgui/imgui_widgets.cpp
 )
 
 target_include_directories(super_z80_core
@@ -192,6 +196,8 @@ target_include_directories(super_z80_frontend
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/frontend
         ${CMAKE_CURRENT_SOURCE_DIR}/frontend/debug_panels
+        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui
+        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui/backends
 )
 
 target_link_libraries(super_z80_core
@@ -200,6 +206,26 @@ target_link_libraries(super_z80_core
         super_z80_cpu
         super_z80_scheduler
 )
+
+if (SDL2_FOUND)
+    target_sources(super_z80_frontend
+        PRIVATE
+            vendor/imgui/backends/imgui_impl_sdl2.cpp
+            vendor/imgui/backends/imgui_impl_sdlrenderer2.cpp
+    )
+    target_compile_definitions(super_z80_frontend
+        PUBLIC
+            SUPER_Z80_HAS_SDL
+    )
+    target_include_directories(super_z80_frontend
+        PRIVATE
+            ${SDL2_INCLUDE_DIRS}
+    )
+    target_link_libraries(super_z80_frontend
+        PRIVATE
+            ${SDL2_LIBRARIES}
+    )
+endif ()
 
 if (SDL2_FOUND)
     add_library(super_z80_sdl_audio_output
