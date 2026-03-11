@@ -1,4 +1,5 @@
 #include "emulator_core.h"
+#include "frontend.h"
 
 #include <array>
 #include <cstdint>
@@ -352,9 +353,18 @@ int run_sdl_audio_shell(EmulatorCore& core) {
         return 1;
     }
 
+    superz80::frontend::Frontend frontend;
+    if (!frontend.initialize({"sdl-audio-shell"})) {
+        std::cerr << "Frontend initialization failed for SDL audio shell." << std::endl;
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
     superz80::SdlAudioOutput audio_output;
     if (!audio_output.initialize()) {
         std::cerr << "SDL audio device open failed: " << SDL_GetError() << std::endl;
+        frontend.shutdown();
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
@@ -370,6 +380,8 @@ int run_sdl_audio_shell(EmulatorCore& core) {
 
     bool running = true;
     while (running) {
+        frontend.begin_frame();
+
         SDL_Event event;
         while (SDL_PollEvent(&event) == 1) {
             if (event.type == SDL_QUIT) {
@@ -381,11 +393,13 @@ int run_sdl_audio_shell(EmulatorCore& core) {
         }
 
         pump_audio_output(core, audio_output);
+        frontend.end_frame();
 
         SDL_Delay(1);
     }
 
     audio_output.shutdown();
+    frontend.shutdown();
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
@@ -410,6 +424,14 @@ int run_sdl_input_shell(EmulatorCore& core) {
         return 1;
     }
 
+    superz80::frontend::Frontend frontend;
+    if (!frontend.initialize({"sdl-input-shell"})) {
+        std::cerr << "Frontend initialization failed for SDL input shell." << std::endl;
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
     SDL_GameController* controller = nullptr;
     for (int index = 0; index < SDL_NumJoysticks(); ++index) {
         if (SDL_IsGameController(index) == SDL_TRUE) {
@@ -425,6 +447,8 @@ int run_sdl_input_shell(EmulatorCore& core) {
 
     bool running = true;
     while (running) {
+        frontend.begin_frame();
+
         SDL_Event event;
         while (SDL_PollEvent(&event) == 1) {
             bool state_changed = false;
@@ -466,12 +490,15 @@ int run_sdl_input_shell(EmulatorCore& core) {
             }
         }
 
+        frontend.end_frame();
+
         SDL_Delay(16);
     }
 
     if (controller != nullptr) {
         SDL_GameControllerClose(controller);
     }
+    frontend.shutdown();
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;

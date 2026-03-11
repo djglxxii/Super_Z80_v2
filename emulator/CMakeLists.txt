@@ -178,9 +178,20 @@ add_library(super_z80_core
     src/emulator_core.cpp
 )
 
+add_library(super_z80_frontend
+    frontend/debug_panels/debug_panel_host.cpp
+    frontend/frontend.cpp
+)
+
 target_include_directories(super_z80_core
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+target_include_directories(super_z80_frontend
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/frontend
+        ${CMAKE_CURRENT_SOURCE_DIR}/frontend/debug_panels
 )
 
 target_link_libraries(super_z80_core
@@ -223,6 +234,7 @@ target_link_libraries(super_z80
     PRIVATE
         super_z80_crc32
         super_z80_core
+        super_z80_frontend
 )
 
 if (SDL2_FOUND)

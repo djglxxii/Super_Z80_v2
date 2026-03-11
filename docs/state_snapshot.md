@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M43
+M44
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,11 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M44 complete.
+- Added the initial frontend module scaffold under `emulator/frontend/`, including a narrow `Frontend` lifecycle interface and a stub `DebugPanelHost` for future debugging panel registration.
+- The SDL shell entry paths now construct the frontend scaffold and run no-op frontend begin/end frame hooks without changing headless execution or emulator core behavior.
+- Build-system integration now compiles the frontend scaffold as its own library while keeping the deterministic core and shell boundaries explicit.
+- The next official frontend milestone is now `M45 - ImGui Integration`.
 - M43 complete.
 - The Showcase ROM source is now annotated as the developer reference implementation, with comments that explain startup ordering, deterministic frame sequencing, CPU-side scene composition, VRAM upload order, metasprite SAT expansion, and the separation between update logic and hardware-visible render writes.
 - Added `docs/showcase_programmers_guide.md` as the programmer-facing reference for the Showcase ROM, covering build flow, source layout, text rendering, scrolling/parallax, metasprites, controller input, PSG sound effects, YM2151 playback, the integrated scene, and deterministic verification commands.
