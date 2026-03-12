@@ -75,6 +75,22 @@ EmulatorCore::CpuSnapshot EmulatorCore::cpu_snapshot() const {
     return cpu_.snapshot();
 }
 
+EmulatorCore::RomSnapshot EmulatorCore::rom_snapshot() const {
+    RomSnapshot snapshot = {};
+    for (std::size_t offset = 0U; offset < snapshot.size(); ++offset) {
+        snapshot[offset] = bus_.read(static_cast<uint16_t>(superz80::Bus::kRomStart + offset));
+    }
+    return snapshot;
+}
+
+EmulatorCore::RamSnapshot EmulatorCore::ram_snapshot() const {
+    RamSnapshot snapshot = {};
+    for (std::size_t offset = 0U; offset < snapshot.size(); ++offset) {
+        snapshot[offset] = bus_.read(static_cast<uint16_t>(superz80::Bus::kRamStart + offset));
+    }
+    return snapshot;
+}
+
 uint32_t EmulatorCore::frame() const {
     return scheduler_.frame();
 }

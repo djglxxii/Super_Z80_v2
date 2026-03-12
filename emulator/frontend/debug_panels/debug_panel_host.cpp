@@ -9,6 +9,10 @@ namespace superz80::frontend {
 
 namespace {
 
+constexpr uint16_t kMemoryRowsPerPage = 16U;
+constexpr uint16_t kMemoryBytesPerRow = 16U;
+constexpr uint16_t kMemoryPageSize = kMemoryRowsPerPage * kMemoryBytesPerRow;
+
 uint8_t high_byte(uint16_t value) {
     return static_cast<uint8_t>((value >> 8U) & 0x00FFU);
 }
@@ -35,6 +39,8 @@ void DebugPanelHost::initialize() {
     runtime_control_state_ = {};
     pending_runtime_control_commands_ = {};
     load_rom_popup_open_ = false;
+    memory_region_ = MemoryRegion::Rom;
+    memory_view_start_address_ = 0x0000U;
     rom_path_input_.fill('\0');
     rom_path_input_cache_.clear();
 }
@@ -44,6 +50,8 @@ void DebugPanelHost::shutdown() {
     runtime_control_state_ = {};
     pending_runtime_control_commands_ = {};
     load_rom_popup_open_ = false;
+    memory_region_ = MemoryRegion::Rom;
+    memory_view_start_address_ = 0x0000U;
     rom_path_input_.fill('\0');
     rom_path_input_cache_.clear();
 }
@@ -160,63 +168,63 @@ void DebugPanelHost::render(const std::string& runtime_name) {
     ImGui::Begin("CPU Debug");
     if (!runtime_control_state_.cpu_debug_state.available) {
         ImGui::TextUnformatted("CPU state is unavailable.");
-        ImGui::End();
-        return;
+    } else {
+        const CpuDebugState& cpu = runtime_control_state_.cpu_debug_state;
+        const uint8_t a = high_byte(cpu.af);
+        const uint8_t f = low_byte(cpu.af);
+        const uint8_t b = high_byte(cpu.bc);
+        const uint8_t c = low_byte(cpu.bc);
+        const uint8_t d = high_byte(cpu.de);
+        const uint8_t e = low_byte(cpu.de);
+        const uint8_t h = high_byte(cpu.hl);
+        const uint8_t l = low_byte(cpu.hl);
+
+        ImGui::TextUnformatted("Registers");
+        ImGui::Separator();
+        ImGui::Text("A: %02X    F: %02X", a, f);
+        ImGui::Text("B: %02X    C: %02X", b, c);
+        ImGui::Text("D: %02X    E: %02X", d, e);
+        ImGui::Text("H: %02X    L: %02X", h, l);
+
+        ImGui::Spacing();
+        ImGui::Text("AF: %04X", cpu.af);
+        ImGui::Text("BC: %04X", cpu.bc);
+        ImGui::Text("DE: %04X", cpu.de);
+        ImGui::Text("HL: %04X", cpu.hl);
+
+        ImGui::Spacing();
+        ImGui::Text("PC: %04X", cpu.pc);
+        ImGui::Text("SP: %04X", cpu.sp);
+        ImGui::Text("IX: %04X", cpu.ix);
+        ImGui::Text("IY: %04X", cpu.iy);
+        ImGui::Text("I:  %02X", cpu.i);
+        ImGui::Text("R:  %02X", cpu.r);
+
+        ImGui::Spacing();
+        ImGui::TextUnformatted("Flags");
+        ImGui::Separator();
+        if (ImGui::BeginTable("cpu-flags", 2, ImGuiTableFlags_SizingStretchSame)) {
+            render_flag_row("S", flag_set(f, 0x80U));
+            render_flag_row("Z", flag_set(f, 0x40U));
+            render_flag_row("H", flag_set(f, 0x10U));
+            render_flag_row("P/V", flag_set(f, 0x04U));
+            render_flag_row("N", flag_set(f, 0x02U));
+            render_flag_row("C", flag_set(f, 0x01U));
+            ImGui::EndTable();
+        }
+
+        ImGui::Spacing();
+        ImGui::TextUnformatted("CPU State");
+        ImGui::Separator();
+        ImGui::Text("HALT: %s", cpu.halted ? "ON" : "OFF");
+        ImGui::Text("INT Line: %s", cpu.int_line ? "ON" : "OFF");
+        ImGui::Text("IFF1: %s", cpu.iff1 ? "ON" : "OFF");
+        ImGui::Text("IFF2: %s", cpu.iff2 ? "ON" : "OFF");
+        ImGui::Text("IM: %u", static_cast<unsigned int>(cpu.interrupt_mode));
     }
-
-    const CpuDebugState& cpu = runtime_control_state_.cpu_debug_state;
-    const uint8_t a = high_byte(cpu.af);
-    const uint8_t f = low_byte(cpu.af);
-    const uint8_t b = high_byte(cpu.bc);
-    const uint8_t c = low_byte(cpu.bc);
-    const uint8_t d = high_byte(cpu.de);
-    const uint8_t e = low_byte(cpu.de);
-    const uint8_t h = high_byte(cpu.hl);
-    const uint8_t l = low_byte(cpu.hl);
-
-    ImGui::TextUnformatted("Registers");
-    ImGui::Separator();
-    ImGui::Text("A: %02X    F: %02X", a, f);
-    ImGui::Text("B: %02X    C: %02X", b, c);
-    ImGui::Text("D: %02X    E: %02X", d, e);
-    ImGui::Text("H: %02X    L: %02X", h, l);
-
-    ImGui::Spacing();
-    ImGui::Text("AF: %04X", cpu.af);
-    ImGui::Text("BC: %04X", cpu.bc);
-    ImGui::Text("DE: %04X", cpu.de);
-    ImGui::Text("HL: %04X", cpu.hl);
-
-    ImGui::Spacing();
-    ImGui::Text("PC: %04X", cpu.pc);
-    ImGui::Text("SP: %04X", cpu.sp);
-    ImGui::Text("IX: %04X", cpu.ix);
-    ImGui::Text("IY: %04X", cpu.iy);
-    ImGui::Text("I:  %02X", cpu.i);
-    ImGui::Text("R:  %02X", cpu.r);
-
-    ImGui::Spacing();
-    ImGui::TextUnformatted("Flags");
-    ImGui::Separator();
-    if (ImGui::BeginTable("cpu-flags", 2, ImGuiTableFlags_SizingStretchSame)) {
-        render_flag_row("S", flag_set(f, 0x80U));
-        render_flag_row("Z", flag_set(f, 0x40U));
-        render_flag_row("H", flag_set(f, 0x10U));
-        render_flag_row("P/V", flag_set(f, 0x04U));
-        render_flag_row("N", flag_set(f, 0x02U));
-        render_flag_row("C", flag_set(f, 0x01U));
-        ImGui::EndTable();
-    }
-
-    ImGui::Spacing();
-    ImGui::TextUnformatted("CPU State");
-    ImGui::Separator();
-    ImGui::Text("HALT: %s", cpu.halted ? "ON" : "OFF");
-    ImGui::Text("INT Line: %s", cpu.int_line ? "ON" : "OFF");
-    ImGui::Text("IFF1: %s", cpu.iff1 ? "ON" : "OFF");
-    ImGui::Text("IFF2: %s", cpu.iff2 ? "ON" : "OFF");
-    ImGui::Text("IM: %u", static_cast<unsigned int>(cpu.interrupt_mode));
     ImGui::End();
+
+    render_memory_viewer();
 }
 
 void DebugPanelHost::end_frame() {
@@ -232,6 +240,114 @@ void DebugPanelHost::sync_rom_path_input() {
         std::min(runtime_control_state_.current_rom_path.size(), rom_path_input_.size() - 1U);
     runtime_control_state_.current_rom_path.copy(rom_path_input_.data(), copy_length);
     rom_path_input_cache_ = runtime_control_state_.current_rom_path;
+}
+
+void DebugPanelHost::render_memory_viewer() {
+    ImGui::Begin("Memory Viewer");
+    if (!runtime_control_state_.memory_viewer_state.available) {
+        ImGui::TextUnformatted("Memory viewer state is unavailable.");
+        ImGui::End();
+        return;
+    }
+
+    int selected_region = memory_region_ == MemoryRegion::Rom ? 0 : 1;
+    if (ImGui::RadioButton("ROM", selected_region == 0)) {
+        selected_region = 0;
+    }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("RAM", selected_region == 1)) {
+        selected_region = 1;
+    }
+
+    const MemoryRegion previous_region = memory_region_;
+    memory_region_ = selected_region == 0 ? MemoryRegion::Rom : MemoryRegion::Ram;
+    if (memory_region_ != previous_region) {
+        memory_view_start_address_ =
+            memory_region_ == MemoryRegion::Rom ? 0x0000U : 0xC000U;
+    }
+
+    clamp_memory_view_start();
+
+    uint32_t start_address = memory_view_start_address_;
+    ImGui::SetNextItemWidth(120.0f);
+    if (ImGui::InputScalar("Start", ImGuiDataType_U32, &start_address, nullptr, nullptr, "%04X",
+                           ImGuiInputTextFlags_CharsHexadecimal)) {
+        memory_view_start_address_ = static_cast<uint16_t>(start_address & 0xFFFFU);
+        clamp_memory_view_start();
+    }
+
+    if (ImGui::Button("Prev Page")) {
+        memory_view_start_address_ = static_cast<uint16_t>(
+            memory_view_start_address_ >= kMemoryPageSize
+                ? memory_view_start_address_ - kMemoryPageSize
+                : 0U);
+        clamp_memory_view_start();
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Next Page")) {
+        memory_view_start_address_ =
+            static_cast<uint16_t>(memory_view_start_address_ + kMemoryPageSize);
+        clamp_memory_view_start();
+    }
+
+    ImGui::Separator();
+
+    const uint16_t region_start = memory_region_ == MemoryRegion::Rom ? 0x0000U : 0xC000U;
+    const uint16_t region_end = memory_region_ == MemoryRegion::Rom ? 0x7FFFU : 0xFFFFU;
+    const uint8_t* bytes = memory_region_ == MemoryRegion::Rom
+                               ? runtime_control_state_.memory_viewer_state.rom.data()
+                               : runtime_control_state_.memory_viewer_state.ram.data();
+    const std::size_t bytes_size = memory_region_ == MemoryRegion::Rom
+                                       ? runtime_control_state_.memory_viewer_state.rom.size()
+                                       : runtime_control_state_.memory_viewer_state.ram.size();
+
+    ImGui::Text("Region: %s  Range: %04X-%04X",
+                memory_region_ == MemoryRegion::Rom ? "ROM" : "RAM",
+                static_cast<unsigned int>(region_start),
+                static_cast<unsigned int>(region_end));
+
+    if (ImGui::BeginChild("memory-viewer-scroll", ImVec2(0.0f, 0.0f), true,
+                          ImGuiWindowFlags_HorizontalScrollbar)) {
+        for (uint16_t row = 0U; row < kMemoryRowsPerPage; ++row) {
+            const uint32_t address = static_cast<uint32_t>(memory_view_start_address_) +
+                                     (static_cast<uint32_t>(row) * kMemoryBytesPerRow);
+            if (address > region_end) {
+                break;
+            }
+
+            const std::size_t base_index = static_cast<std::size_t>(address - region_start);
+            ImGui::Text("%04X:", static_cast<unsigned int>(address));
+            ImGui::SameLine();
+
+            for (uint16_t column = 0U; column < kMemoryBytesPerRow; ++column) {
+                const std::size_t index = base_index + column;
+                if (index >= bytes_size) {
+                    break;
+                }
+
+                ImGui::SameLine();
+                ImGui::Text("%02X", static_cast<unsigned int>(bytes[index]));
+            }
+        }
+    }
+    ImGui::EndChild();
+    ImGui::End();
+}
+
+void DebugPanelHost::clamp_memory_view_start() {
+    const uint16_t region_start = memory_region_ == MemoryRegion::Rom ? 0x0000U : 0xC000U;
+    const uint16_t region_end = memory_region_ == MemoryRegion::Rom ? 0x7FFFU : 0xFFFFU;
+    const uint16_t max_start =
+        region_end >= (kMemoryPageSize - 1U) ? static_cast<uint16_t>(region_end - (kMemoryPageSize - 1U))
+                                             : region_start;
+
+    if (memory_view_start_address_ < region_start) {
+        memory_view_start_address_ = region_start;
+    }
+    if (memory_view_start_address_ > max_start) {
+        memory_view_start_address_ = max_start;
+    }
 }
 
 } // namespace superz80::frontend

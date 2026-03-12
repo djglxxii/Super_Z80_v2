@@ -26,6 +26,12 @@ struct CpuDebugState {
     bool int_line = false;
 };
 
+struct MemoryViewerState {
+    bool available = false;
+    std::array<uint8_t, 0x8000U> rom = {};
+    std::array<uint8_t, 0x4000U> ram = {};
+};
+
 struct RuntimeControlState {
     bool running = true;
     unsigned int frame_counter = 0U;
@@ -34,6 +40,7 @@ struct RuntimeControlState {
     std::string current_rom_path;
     std::string rom_load_status_message;
     CpuDebugState cpu_debug_state = {};
+    MemoryViewerState memory_viewer_state = {};
 };
 
 struct RuntimeControlCommands {
@@ -56,12 +63,21 @@ public:
     void end_frame();
 
 private:
+    enum class MemoryRegion : uint8_t {
+        Rom = 0U,
+        Ram = 1U,
+    };
+
     void sync_rom_path_input();
+    void render_memory_viewer();
+    void clamp_memory_view_start();
 
     bool initialized_ = false;
     RuntimeControlState runtime_control_state_ = {};
     RuntimeControlCommands pending_runtime_control_commands_ = {};
     bool load_rom_popup_open_ = false;
+    MemoryRegion memory_region_ = MemoryRegion::Rom;
+    uint16_t memory_view_start_address_ = 0x0000U;
     std::array<char, 512> rom_path_input_ = {};
     std::string rom_path_input_cache_;
 };

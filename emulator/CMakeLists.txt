@@ -303,6 +303,10 @@ add_executable(super_z80_test_cpu
     tests/unit/test_cpu.cpp
 )
 
+add_executable(super_z80_test_emulator_core
+    tests/unit/test_emulator_core.cpp
+)
+
 add_executable(super_z80_test_scheduler
     tests/unit/test_scheduler.cpp
 )
@@ -463,6 +467,11 @@ target_link_libraries(super_z80_test_irq
 target_link_libraries(super_z80_test_cpu
     PRIVATE
         super_z80_cpu
+)
+
+target_link_libraries(super_z80_test_emulator_core
+    PRIVATE
+        super_z80_core
 )
 
 target_link_libraries(super_z80_test_scheduler
@@ -671,6 +680,7 @@ add_test(NAME super_z80_test_io COMMAND super_z80_test_io)
 add_test(NAME super_z80_test_bus COMMAND super_z80_test_bus)
 add_test(NAME super_z80_test_irq COMMAND super_z80_test_irq)
 add_test(NAME super_z80_test_cpu COMMAND super_z80_test_cpu)
+add_test(NAME super_z80_test_emulator_core COMMAND super_z80_test_emulator_core)
 add_test(NAME super_z80_test_scheduler COMMAND super_z80_test_scheduler)
 add_test(NAME super_z80_test_vblank COMMAND super_z80_test_vblank)
 add_test(NAME super_z80_test_dma COMMAND super_z80_test_dma)

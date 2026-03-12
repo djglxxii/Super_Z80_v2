@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M48
+M49
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,13 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M49 complete.
+- The frontend now exposes a read-only `Memory Viewer` ImGui panel with ROM/RAM region selection, hex-oriented paging, and clamped start-address navigation for the `0x0000-0x7FFF` ROM window and `0xC000-0xFFFF` RAM window.
+- Added narrow read-only ROM and RAM snapshot accessors on `EmulatorCore`, then routed those snapshots through the existing shell-owned frontend runtime-state handoff so the UI can inspect memory without holding mutable core references or changing deterministic execution flow.
+- Core unit coverage now verifies that ROM/RAM snapshots reflect loaded ROM bytes, open-bus-filled ROM slack, and live RAM writes at both the start and end of the mapped RAM window.
+- Headless ROM execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xC5117D35`.
+- CI-safe SDL smoke checks still succeed under dummy/software drivers for both `--sdl-input --rom rom/showcase/build/showcase.bin` and `--sdl-audio --rom rom/showcase/build/showcase.bin`, confirming the memory viewer startup path without changing headless execution behavior.
+- The next official frontend milestone is now `M50 - VRAM Viewer`.
 - M48 complete.
 - The frontend now exposes a read-only `CPU Debug` ImGui panel that refreshes every rendered frame and displays the live Z80 register set, including `AF/BC/DE/HL`, `PC`, `SP`, `IX`, `IY`, `I`, `R`, decoded `S/Z/H/PV/N/C` flags, and interrupt/HALT state.
 - Added a narrow read-only CPU snapshot path from `superz80::CPU` through `EmulatorCore` into the frontend runtime-state handoff, preserving the existing shell-owned control flow and avoiding any UI writes into deterministic core logic.
