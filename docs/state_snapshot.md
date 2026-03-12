@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M53
+M54
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,13 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M54 complete.
+- The frontend now exposes a read-only `Input Visualization` ImGui panel that refreshes every rendered frame and displays the currently supported controller buttons plus raw active-low `PAD1` and `PAD1_SYS` port-visible values for developer inspection.
+- Added a narrow read-only input snapshot accessor on `IO`, exposed through `Bus` and `EmulatorCore`, so the frontend can inspect live controller state without holding mutable input references or altering deterministic execution flow.
+- Core and input unit coverage now verify logical button snapshot state alongside the raw active-low port values surfaced to the frontend.
+- Headless ROM execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xC5117D35`.
+- CI-safe SDL smoke checks still succeed under dummy/software drivers for both `--sdl-input --rom rom/showcase/build/showcase.bin` and `--sdl-audio --rom rom/showcase/build/showcase.bin`, confirming the input visualization panel startup path without changing headless execution behavior.
+- The next official frontend milestone is now `M55 - Frame Timing & Scheduler Panel`.
 - M53 complete.
 - The frontend now exposes a read-only `Audio Debug` ImGui panel that refreshes every rendered frame and displays PSG register/state, YM2151 register/state, per-channel activity summaries, timer/IRQ status, and current mixed-sample indicators for developer inspection.
 - Added narrow read-only audio snapshot accessors on `APU` and `YM2151`, then exposed a combined audio snapshot through `EmulatorCore` so the frontend can inspect live audio subsystem state without holding mutable core references or altering deterministic execution flow.

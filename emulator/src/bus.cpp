@@ -131,6 +131,10 @@ bool Bus::controller_button(IO::Button button) const {
     return io_.button(button);
 }
 
+IO::Snapshot Bus::controller_snapshot() const {
+    return io_.snapshot();
+}
+
 void Bus::request_irq(uint8_t irq_bit) {
     irq_controller_.request(irq_bit);
 }

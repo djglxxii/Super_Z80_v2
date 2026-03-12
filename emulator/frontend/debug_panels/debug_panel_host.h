@@ -58,6 +58,19 @@ struct DmaDebugState {
     bool active = false;
 };
 
+struct InputVisualizationState {
+    bool available = false;
+    bool up = false;
+    bool down = false;
+    bool left = false;
+    bool right = false;
+    bool a = false;
+    bool b = false;
+    bool start = false;
+    uint8_t pad1 = 0xFFU;
+    uint8_t pad1_sys = 0xFFU;
+};
+
 struct AudioDebugPsgChannelState {
     uint16_t period = 0U;
     uint8_t volume = 0U;
@@ -133,6 +146,7 @@ struct RuntimeControlState {
     VramViewerState vram_viewer_state = {};
     SpriteDebugState sprite_debug_state = {};
     DmaDebugState dma_debug_state = {};
+    InputVisualizationState input_visualization_state = {};
     AudioDebugState audio_debug_state = {};
 };
 
@@ -166,6 +180,7 @@ private:
     void render_vram_viewer();
     void render_sprite_debug_panel();
     void render_dma_debug_panel();
+    void render_input_visualization_panel();
     void render_audio_debug_panel();
     void clamp_memory_view_start();
     void clamp_vram_view_start();

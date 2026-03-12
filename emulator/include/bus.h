@@ -76,6 +76,7 @@ public:
     void write_port(uint8_t port, uint8_t value);
     void set_controller_button(IO::Button button, bool pressed);
     bool controller_button(IO::Button button) const;
+    IO::Snapshot controller_snapshot() const;
     void request_irq(uint8_t irq_bit);
     bool irq_line() const;
     bool ym2151_irq_pending() const;

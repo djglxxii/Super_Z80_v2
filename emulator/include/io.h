@@ -22,6 +22,18 @@ public:
     static constexpr uint8_t kPad1IdleValue = 0xFFU;
     static constexpr uint8_t kPad1SysIdleValue = 0xFFU;
 
+    struct Snapshot {
+        bool up = false;
+        bool down = false;
+        bool left = false;
+        bool right = false;
+        bool a = false;
+        bool b = false;
+        bool start = false;
+        uint8_t pad1 = kPad1IdleValue;
+        uint8_t pad1_sys = kPad1SysIdleValue;
+    };
+
     IO();
 
     void reset();
@@ -30,6 +42,7 @@ public:
     void write(uint8_t port, uint8_t value);
     void set_button(Button button, bool pressed);
     bool button(Button button) const;
+    Snapshot snapshot() const;
 
 private:
     struct ControllerState {

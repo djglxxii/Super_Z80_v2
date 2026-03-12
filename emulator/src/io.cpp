@@ -74,6 +74,20 @@ bool IO::button(Button button) const {
     return false;
 }
 
+IO::Snapshot IO::snapshot() const {
+    return {
+        pad1_.up,
+        pad1_.down,
+        pad1_.left,
+        pad1_.right,
+        pad1_.a,
+        pad1_.b,
+        pad1_.start,
+        read_controller_port(kPad1Port),
+        read_controller_port(kPad1SysPort),
+    };
+}
+
 uint8_t IO::read_controller_port(uint8_t port) const {
     if (port == kPad1Port) {
         uint8_t value = kPad1IdleValue;

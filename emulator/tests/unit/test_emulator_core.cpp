@@ -54,8 +54,12 @@ int main() {
     core.bus().write_port(superz80::Bus::kDmaDstLowPort, 0x20U);
     core.bus().write_port(superz80::Bus::kDmaDstHighPort, 0xC0U);
     core.bus().write_port(superz80::Bus::kDmaLengthPort, 0x02U);
+    core.bus().set_controller_button(superz80::IO::Button::Up, true);
+    core.bus().set_controller_button(superz80::IO::Button::A, true);
+    core.bus().set_controller_button(superz80::IO::Button::Start, true);
 
     const EmulatorCore::DmaSnapshot dma_idle_snapshot = core.dma_snapshot();
+    const EmulatorCore::InputSnapshot input_snapshot = core.input_snapshot();
     core.bus().write_port(superz80::Bus::kDmaControlPort, superz80::DMA::kControlStartBit);
     const EmulatorCore::DmaSnapshot dma_active_snapshot = core.dma_snapshot();
     core.bus().write_port(superz80::Bus::kAudioToneALowPort, 0x34U);
@@ -103,6 +107,17 @@ int main() {
     ok = expect_equal_u8("dma-snapshot-active-flag",
                          static_cast<uint8_t>(dma_active_snapshot.active ? 1U : 0U),
                          0x01U) && ok;
+    ok = expect_equal_u8("input-snapshot-up",
+                         static_cast<uint8_t>(input_snapshot.up ? 1U : 0U),
+                         0x01U) && ok;
+    ok = expect_equal_u8("input-snapshot-a",
+                         static_cast<uint8_t>(input_snapshot.a ? 1U : 0U),
+                         0x01U) && ok;
+    ok = expect_equal_u8("input-snapshot-start",
+                         static_cast<uint8_t>(input_snapshot.start ? 1U : 0U),
+                         0x01U) && ok;
+    ok = expect_equal_u8("input-snapshot-pad1", input_snapshot.pad1, 0xEEU) && ok;
+    ok = expect_equal_u8("input-snapshot-pad1-sys", input_snapshot.pad1_sys, 0xFEU) && ok;
     ok = expect_equal_u8("audio-snapshot-psg-tone-a-low",
                          audio_snapshot.apu.registers[0U],
                          0x34U) && ok;

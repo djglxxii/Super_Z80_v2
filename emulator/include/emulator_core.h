@@ -17,6 +17,7 @@ public:
     using ApuSnapshot = superz80::APU::Snapshot;
     using CpuSnapshot = superz80::CPU::RegisterSnapshot;
     using DmaSnapshot = superz80::DMA::Snapshot;
+    using InputSnapshot = superz80::IO::Snapshot;
     using RomSnapshot = std::array<uint8_t, superz80::Bus::kRomSize>;
     using RamSnapshot = std::array<uint8_t, superz80::Bus::kRamWindowSize>;
     using VramSnapshot = std::array<uint8_t, superz80::VDP::kVramSize>;
@@ -51,6 +52,7 @@ public:
     std::size_t consume_audio_samples(AudioSample* destination, std::size_t max_samples);
     CpuSnapshot cpu_snapshot() const;
     DmaSnapshot dma_snapshot() const;
+    InputSnapshot input_snapshot() const;
     AudioSnapshot audio_snapshot() const;
     RomSnapshot rom_snapshot() const;
     RamSnapshot ram_snapshot() const;

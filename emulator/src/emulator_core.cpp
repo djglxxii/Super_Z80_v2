@@ -79,6 +79,10 @@ EmulatorCore::DmaSnapshot EmulatorCore::dma_snapshot() const {
     return bus_.dma().snapshot();
 }
 
+EmulatorCore::InputSnapshot EmulatorCore::input_snapshot() const {
+    return bus_.controller_snapshot();
+}
+
 EmulatorCore::AudioSnapshot EmulatorCore::audio_snapshot() const {
     return {
         bus_.apu().snapshot(),

@@ -42,5 +42,18 @@ int main() {
     ok = expect_equal("pad1-default-idle", io.read(superz80::IO::kPad1Port), superz80::IO::kPad1IdleValue) && ok;
     ok = expect_equal("pad1-sys-default-idle", io.read(superz80::IO::kPad1SysPort), superz80::IO::kPad1SysIdleValue) && ok;
 
+    io.set_button(superz80::IO::Button::Up, true);
+    io.set_button(superz80::IO::Button::Right, true);
+    io.set_button(superz80::IO::Button::B, true);
+    io.set_button(superz80::IO::Button::Start, true);
+    const superz80::IO::Snapshot snapshot = io.snapshot();
+    ok = expect_equal("snapshot-pad1", snapshot.pad1, 0xD6U) && ok;
+    ok = expect_equal("snapshot-pad1-sys", snapshot.pad1_sys, 0xFEU) && ok;
+    ok = expect_equal("snapshot-up-pressed", static_cast<uint8_t>(snapshot.up ? 1U : 0U), 0x01U) && ok;
+    ok = expect_equal("snapshot-right-pressed", static_cast<uint8_t>(snapshot.right ? 1U : 0U), 0x01U) && ok;
+    ok = expect_equal("snapshot-b-pressed", static_cast<uint8_t>(snapshot.b ? 1U : 0U), 0x01U) && ok;
+    ok = expect_equal("snapshot-start-pressed", static_cast<uint8_t>(snapshot.start ? 1U : 0U), 0x01U) && ok;
+    ok = expect_equal("snapshot-left-released", static_cast<uint8_t>(snapshot.left ? 1U : 0U), 0x00U) && ok;
+
     return ok ? 0 : 1;
 }

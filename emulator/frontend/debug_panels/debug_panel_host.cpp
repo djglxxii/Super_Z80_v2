@@ -232,6 +232,7 @@ void DebugPanelHost::render(const std::string& runtime_name) {
     render_vram_viewer();
     render_sprite_debug_panel();
     render_dma_debug_panel();
+    render_input_visualization_panel();
     render_audio_debug_panel();
 }
 
@@ -633,6 +634,38 @@ void DebugPanelHost::render_audio_debug_panel() {
         ImGui::EndChild();
     }
 
+    ImGui::End();
+}
+
+void DebugPanelHost::render_input_visualization_panel() {
+    ImGui::Begin("Input Visualization");
+    if (!runtime_control_state_.input_visualization_state.available) {
+        ImGui::TextUnformatted("Input visualization state is unavailable.");
+        ImGui::End();
+        return;
+    }
+
+    const InputVisualizationState& input = runtime_control_state_.input_visualization_state;
+
+    ImGui::TextUnformatted("Buttons");
+    ImGui::Separator();
+    if (ImGui::BeginTable("input-buttons", 2, ImGuiTableFlags_SizingStretchSame)) {
+        render_flag_row("Up", input.up);
+        render_flag_row("Down", input.down);
+        render_flag_row("Left", input.left);
+        render_flag_row("Right", input.right);
+        render_flag_row("A", input.a);
+        render_flag_row("B", input.b);
+        render_flag_row("Start", input.start);
+        ImGui::EndTable();
+    }
+
+    ImGui::Spacing();
+    ImGui::TextUnformatted("Raw Ports");
+    ImGui::Separator();
+    ImGui::Text("PAD1:     0x%02X", input.pad1);
+    ImGui::Text("PAD1_SYS: 0x%02X", input.pad1_sys);
+    ImGui::TextUnformatted("Active-low input bits clear to 0 when pressed.");
     ImGui::End();
 }
 
