@@ -2,9 +2,29 @@
 #define SUPER_Z80_FRONTEND_DEBUG_PANEL_HOST_H
 
 #include <array>
+#include <cstdint>
 #include <string>
 
 namespace superz80::frontend {
+
+struct CpuDebugState {
+    bool available = false;
+    uint16_t af = 0U;
+    uint16_t bc = 0U;
+    uint16_t de = 0U;
+    uint16_t hl = 0U;
+    uint16_t ix = 0U;
+    uint16_t iy = 0U;
+    uint16_t pc = 0U;
+    uint16_t sp = 0U;
+    uint8_t i = 0U;
+    uint8_t r = 0U;
+    uint8_t interrupt_mode = 0U;
+    bool iff1 = false;
+    bool iff2 = false;
+    bool halted = false;
+    bool int_line = false;
+};
 
 struct RuntimeControlState {
     bool running = true;
@@ -13,6 +33,7 @@ struct RuntimeControlState {
     bool rom_load_status_ok = false;
     std::string current_rom_path;
     std::string rom_load_status_message;
+    CpuDebugState cpu_debug_state = {};
 };
 
 struct RuntimeControlCommands {

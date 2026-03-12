@@ -71,6 +71,10 @@ std::size_t EmulatorCore::consume_audio_samples(AudioSample* destination, std::s
     return samples_to_copy;
 }
 
+EmulatorCore::CpuSnapshot EmulatorCore::cpu_snapshot() const {
+    return cpu_.snapshot();
+}
+
 uint32_t EmulatorCore::frame() const {
     return scheduler_.frame();
 }

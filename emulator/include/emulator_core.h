@@ -13,6 +13,7 @@
 class EmulatorCore {
 public:
     using AudioSample = superz80::APU::Sample;
+    using CpuSnapshot = superz80::CPU::RegisterSnapshot;
 
     static constexpr uint32_t kAudioMasterClockHz = 3579545U;
     static constexpr uint32_t kVideoFramesPerSecond = 60U;
@@ -30,6 +31,7 @@ public:
     const superz80::Bus& bus() const;
     std::size_t available_audio_samples() const;
     std::size_t consume_audio_samples(AudioSample* destination, std::size_t max_samples);
+    CpuSnapshot cpu_snapshot() const;
     uint32_t frame() const;
     uint32_t scanline() const;
 

@@ -1,10 +1,34 @@
 #include "debug_panel_host.h"
 
 #include <algorithm>
+#include <cstdint>
 
 #include "imgui.h"
 
 namespace superz80::frontend {
+
+namespace {
+
+uint8_t high_byte(uint16_t value) {
+    return static_cast<uint8_t>((value >> 8U) & 0x00FFU);
+}
+
+uint8_t low_byte(uint16_t value) {
+    return static_cast<uint8_t>(value & 0x00FFU);
+}
+
+bool flag_set(uint8_t flags, uint8_t mask) {
+    return (flags & mask) != 0U;
+}
+
+void render_flag_row(const char* label, bool enabled) {
+    ImGui::TableNextColumn();
+    ImGui::TextUnformatted(label);
+    ImGui::TableNextColumn();
+    ImGui::TextUnformatted(enabled ? "ON" : "OFF");
+}
+
+} // namespace
 
 void DebugPanelHost::initialize() {
     initialized_ = true;
@@ -130,7 +154,68 @@ void DebugPanelHost::render(const std::string& runtime_name) {
 
     ImGui::Begin("Super_Z80 Frontend");
     ImGui::Text("Runtime: %s", runtime_name.c_str());
-    ImGui::TextUnformatted("Control panel and ROM loader active. Debug subsystem panels arrive in later milestones.");
+    ImGui::TextUnformatted("Control panel, ROM loader, and CPU inspection panel are active.");
+    ImGui::End();
+
+    ImGui::Begin("CPU Debug");
+    if (!runtime_control_state_.cpu_debug_state.available) {
+        ImGui::TextUnformatted("CPU state is unavailable.");
+        ImGui::End();
+        return;
+    }
+
+    const CpuDebugState& cpu = runtime_control_state_.cpu_debug_state;
+    const uint8_t a = high_byte(cpu.af);
+    const uint8_t f = low_byte(cpu.af);
+    const uint8_t b = high_byte(cpu.bc);
+    const uint8_t c = low_byte(cpu.bc);
+    const uint8_t d = high_byte(cpu.de);
+    const uint8_t e = low_byte(cpu.de);
+    const uint8_t h = high_byte(cpu.hl);
+    const uint8_t l = low_byte(cpu.hl);
+
+    ImGui::TextUnformatted("Registers");
+    ImGui::Separator();
+    ImGui::Text("A: %02X    F: %02X", a, f);
+    ImGui::Text("B: %02X    C: %02X", b, c);
+    ImGui::Text("D: %02X    E: %02X", d, e);
+    ImGui::Text("H: %02X    L: %02X", h, l);
+
+    ImGui::Spacing();
+    ImGui::Text("AF: %04X", cpu.af);
+    ImGui::Text("BC: %04X", cpu.bc);
+    ImGui::Text("DE: %04X", cpu.de);
+    ImGui::Text("HL: %04X", cpu.hl);
+
+    ImGui::Spacing();
+    ImGui::Text("PC: %04X", cpu.pc);
+    ImGui::Text("SP: %04X", cpu.sp);
+    ImGui::Text("IX: %04X", cpu.ix);
+    ImGui::Text("IY: %04X", cpu.iy);
+    ImGui::Text("I:  %02X", cpu.i);
+    ImGui::Text("R:  %02X", cpu.r);
+
+    ImGui::Spacing();
+    ImGui::TextUnformatted("Flags");
+    ImGui::Separator();
+    if (ImGui::BeginTable("cpu-flags", 2, ImGuiTableFlags_SizingStretchSame)) {
+        render_flag_row("S", flag_set(f, 0x80U));
+        render_flag_row("Z", flag_set(f, 0x40U));
+        render_flag_row("H", flag_set(f, 0x10U));
+        render_flag_row("P/V", flag_set(f, 0x04U));
+        render_flag_row("N", flag_set(f, 0x02U));
+        render_flag_row("C", flag_set(f, 0x01U));
+        ImGui::EndTable();
+    }
+
+    ImGui::Spacing();
+    ImGui::TextUnformatted("CPU State");
+    ImGui::Separator();
+    ImGui::Text("HALT: %s", cpu.halted ? "ON" : "OFF");
+    ImGui::Text("INT Line: %s", cpu.int_line ? "ON" : "OFF");
+    ImGui::Text("IFF1: %s", cpu.iff1 ? "ON" : "OFF");
+    ImGui::Text("IFF2: %s", cpu.iff2 ? "ON" : "OFF");
+    ImGui::Text("IM: %u", static_cast<unsigned int>(cpu.interrupt_mode));
     ImGui::End();
 }
 

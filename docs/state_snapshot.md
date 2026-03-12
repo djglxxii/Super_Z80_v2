@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M47
+M48
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,13 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M48 complete.
+- The frontend now exposes a read-only `CPU Debug` ImGui panel that refreshes every rendered frame and displays the live Z80 register set, including `AF/BC/DE/HL`, `PC`, `SP`, `IX`, `IY`, `I`, `R`, decoded `S/Z/H/PV/N/C` flags, and interrupt/HALT state.
+- Added a narrow read-only CPU snapshot path from `superz80::CPU` through `EmulatorCore` into the frontend runtime-state handoff, preserving the existing shell-owned control flow and avoiding any UI writes into deterministic core logic.
+- CPU unit coverage now verifies the new register snapshot accessor against Z80ex execution state after instruction execution and HALT.
+- Headless ROM execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xC5117D35`.
+- CI-safe SDL smoke checks still succeed under dummy/software drivers for both `--sdl-input --rom rom/showcase/build/showcase.bin` and `--sdl-audio --rom rom/showcase/build/showcase.bin`, confirming the CPU panel startup path without changing headless execution behavior.
+- The next official frontend milestone is now `M49 - Memory Viewer`.
 - M47 complete.
 - The frontend now exposes a top-level `File` menu with `Load ROM...` and `Reload ROM`, using a minimal ImGui modal text-entry flow for interactive ROM path entry without adding native file dialog dependencies.
 - Frontend-issued ROM load/reload requests now flow through shell-owned runtime state and reuse the existing `initialize()` plus `load_rom()` path, preserving deterministic core boundaries while resetting execution cleanly from the loaded ROM.

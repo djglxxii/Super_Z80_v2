@@ -89,6 +89,27 @@ uint8_t CPU::get_register_a() const {
     return static_cast<uint8_t>((af >> 8U) & 0xFFU);
 }
 
+CPU::RegisterSnapshot CPU::snapshot() const {
+    RegisterSnapshot snapshot = {};
+    snapshot.af = z80ex_get_reg(as_context(cpu_), regAF);
+    snapshot.bc = z80ex_get_reg(as_context(cpu_), regBC);
+    snapshot.de = z80ex_get_reg(as_context(cpu_), regDE);
+    snapshot.hl = z80ex_get_reg(as_context(cpu_), regHL);
+    snapshot.ix = z80ex_get_reg(as_context(cpu_), regIX);
+    snapshot.iy = z80ex_get_reg(as_context(cpu_), regIY);
+    snapshot.pc = z80ex_get_reg(as_context(cpu_), regPC);
+    snapshot.sp = z80ex_get_reg(as_context(cpu_), regSP);
+    snapshot.i = static_cast<uint8_t>(z80ex_get_reg(as_context(cpu_), regI) & 0x00FFU);
+    snapshot.r = static_cast<uint8_t>(z80ex_get_reg(as_context(cpu_), regR) & 0x00FFU);
+    snapshot.interrupt_mode =
+        static_cast<uint8_t>(z80ex_get_reg(as_context(cpu_), regIM) & 0x00FFU);
+    snapshot.iff1 = z80ex_get_reg(as_context(cpu_), regIFF1) != 0U;
+    snapshot.iff2 = z80ex_get_reg(as_context(cpu_), regIFF2) != 0U;
+    snapshot.halted = is_halted();
+    snapshot.int_line = int_line_;
+    return snapshot;
+}
+
 bool CPU::is_halted() const {
     return z80ex_doing_halt(as_context(cpu_)) != 0;
 }

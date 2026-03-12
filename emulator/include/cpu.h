@@ -8,6 +8,24 @@ namespace superz80 {
 
 class CPU {
 public:
+    struct RegisterSnapshot {
+        uint16_t af = 0U;
+        uint16_t bc = 0U;
+        uint16_t de = 0U;
+        uint16_t hl = 0U;
+        uint16_t ix = 0U;
+        uint16_t iy = 0U;
+        uint16_t pc = 0U;
+        uint16_t sp = 0U;
+        uint8_t i = 0U;
+        uint8_t r = 0U;
+        uint8_t interrupt_mode = 0U;
+        bool iff1 = false;
+        bool iff2 = false;
+        bool halted = false;
+        bool int_line = false;
+    };
+
     explicit CPU(Bus& bus);
     ~CPU();
 
@@ -22,6 +40,7 @@ public:
     void set_int_line(bool level);
 
     uint8_t get_register_a() const;
+    RegisterSnapshot snapshot() const;
     bool is_halted() const;
     bool int_line() const;
 
