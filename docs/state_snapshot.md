@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M46
+M47
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,15 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M47 complete.
+- The frontend now exposes a top-level `File` menu with `Load ROM...` and `Reload ROM`, using a minimal ImGui modal text-entry flow for interactive ROM path entry without adding native file dialog dependencies.
+- Frontend-issued ROM load/reload requests now flow through shell-owned runtime state and reuse the existing `initialize()` plus `load_rom()` path, preserving deterministic core boundaries while resetting execution cleanly from the loaded ROM.
+- SDL input and SDL audio shells now accept optional `--rom <path>` startup ROMs, track the active ROM path for reset/reload, and surface load success or failure through both the frontend status area and shell stderr/stdout messages.
+- SDL audio output now clears its host queue on ROM load/reset so interactive ROM switches do not leak stale pre-reset samples into the restarted runtime.
+- Headless ROM execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xC5117D35`.
+- CI-safe SDL smoke checks succeed under dummy/software drivers for both `--sdl-input --rom rom/showcase/build/showcase.bin` and `--sdl-audio --rom rom/showcase/build/showcase.bin`, confirming the shell-owned ROM loading path used by the new frontend workflow.
+- Invalid ROM startup paths now fail clearly in SDL runtime startup, for example `./build/super_z80 --sdl-input --rom /tmp/does_not_exist.bin` reports `Unable to open ROM file: /tmp/does_not_exist.bin`.
+- The next official frontend milestone is now `M48 - CPU Debug Panel`.
 - M46 complete.
 - The frontend now exposes an `Emulator Control` ImGui window with run/pause, reset, and single-frame stepping controls plus live execution state and frame-counter text.
 - SDL shell loops now route frontend-issued runtime commands through shell-owned control state, stepping exactly `Scheduler::kScanlinesPerFrame` for both continuous execution and paused single-frame stepping without modifying deterministic core subsystem logic.

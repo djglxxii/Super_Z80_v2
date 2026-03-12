@@ -27,6 +27,7 @@ public:
     bool initialize();
     void start();
     void shutdown();
+    void clear();
 
     std::size_t enqueue_samples(const Sample* samples, std::size_t sample_count);
     std::size_t read_samples_or_silence(Sample* destination, std::size_t sample_count);

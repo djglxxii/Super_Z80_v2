@@ -82,6 +82,13 @@ void SdlAudioOutput::shutdown() {
 #endif
 }
 
+void SdlAudioOutput::clear() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    read_index_ = 0U;
+    write_index_ = 0U;
+    size_ = 0U;
+}
+
 std::size_t SdlAudioOutput::enqueue_samples(const Sample* samples, std::size_t sample_count) {
     if (samples == nullptr || sample_count == 0U || buffer_.empty()) {
         return 0U;
