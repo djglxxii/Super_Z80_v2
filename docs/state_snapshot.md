@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M50
+M51
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,13 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M51 complete.
+- The frontend now exposes a read-only `Sprite Debug` ImGui panel that displays all `64` sprite attribute table entries with sprite index, `X`, `Y`, tile index, and raw attribute-byte values refreshed every rendered frame.
+- Added a narrow read-only sprite table snapshot accessor on `EmulatorCore` that decodes SAT entries from VDP VRAM using the existing `Y/X/Tile/Attr` layout without exposing mutable VDP references or altering deterministic execution flow.
+- Core unit coverage now verifies that sprite table snapshots reflect SAT writes for both the first and last sprite entries and remain bounded to the platform `64`-sprite limit.
+- Headless ROM execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xC5117D35`.
+- CI-safe SDL smoke checks still succeed under dummy/software drivers for both `--sdl-input --rom rom/showcase/build/showcase.bin` and `--sdl-audio --rom rom/showcase/build/showcase.bin`, confirming the sprite debug panel startup path without changing headless execution behavior.
+- The next official frontend milestone is now `M52 - DMA Debug Panel`.
 - M50 complete.
 - The frontend now exposes a read-only `VRAM Viewer` ImGui panel with clamped hex start-address navigation across the full `0x0000-0xFFFF` VDP VRAM range and a 16-bytes-per-row raw hex display that refreshes every rendered frame.
 - Added a narrow read-only VRAM snapshot accessor on `EmulatorCore`, then routed that snapshot through the existing shell-owned frontend runtime-state handoff so the UI can inspect live VDP memory without holding mutable core references or changing deterministic execution flow.

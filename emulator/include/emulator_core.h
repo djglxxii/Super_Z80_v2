@@ -17,6 +17,13 @@ public:
     using RomSnapshot = std::array<uint8_t, superz80::Bus::kRomSize>;
     using RamSnapshot = std::array<uint8_t, superz80::Bus::kRamWindowSize>;
     using VramSnapshot = std::array<uint8_t, superz80::VDP::kVramSize>;
+    struct SpriteSnapshot {
+        uint8_t x = 0U;
+        uint8_t y = 0U;
+        uint8_t tile_index = 0U;
+        uint8_t attributes = 0U;
+    };
+    using SpriteTableSnapshot = std::array<SpriteSnapshot, superz80::VDP::kMaxSprites>;
 
     static constexpr uint32_t kAudioMasterClockHz = 3579545U;
     static constexpr uint32_t kVideoFramesPerSecond = 60U;
@@ -38,6 +45,7 @@ public:
     RomSnapshot rom_snapshot() const;
     RamSnapshot ram_snapshot() const;
     VramSnapshot vram_snapshot() const;
+    SpriteTableSnapshot sprite_table_snapshot() const;
     uint32_t frame() const;
     uint32_t scanline() const;
 

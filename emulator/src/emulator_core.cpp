@@ -99,6 +99,21 @@ EmulatorCore::VramSnapshot EmulatorCore::vram_snapshot() const {
     return snapshot;
 }
 
+EmulatorCore::SpriteTableSnapshot EmulatorCore::sprite_table_snapshot() const {
+    SpriteTableSnapshot snapshot = {};
+    for (std::size_t sprite_index = 0U; sprite_index < snapshot.size(); ++sprite_index) {
+        const uint16_t sprite_base = static_cast<uint16_t>(
+            superz80::VDP::kSpriteAttributeTableBase + (sprite_index * superz80::VDP::kSpriteSizeBytes));
+        snapshot[sprite_index] = {
+            bus_.vdp().vram(static_cast<uint16_t>(sprite_base + 1U)),
+            bus_.vdp().vram(sprite_base),
+            bus_.vdp().vram(static_cast<uint16_t>(sprite_base + 2U)),
+            bus_.vdp().vram(static_cast<uint16_t>(sprite_base + 3U)),
+        };
+    }
+    return snapshot;
+}
+
 uint32_t EmulatorCore::frame() const {
     return scheduler_.frame();
 }

@@ -282,7 +282,8 @@ void populate_frontend_runtime_state(superz80::frontend::Frontend& frontend,
     const EmulatorCore::RomSnapshot rom_snapshot = core.rom_snapshot();
     const EmulatorCore::RamSnapshot ram_snapshot = core.ram_snapshot();
     const EmulatorCore::VramSnapshot vram_snapshot = core.vram_snapshot();
-    frontend.set_runtime_control_state({
+    const EmulatorCore::SpriteTableSnapshot sprite_table_snapshot = core.sprite_table_snapshot();
+    superz80::frontend::RuntimeControlState runtime_state = {
         loop_state.emulation_running,
         static_cast<unsigned int>(core.frame()),
         !loop_state.current_rom_path.empty(),
@@ -316,7 +317,22 @@ void populate_frontend_runtime_state(superz80::frontend::Frontend& frontend,
             true,
             vram_snapshot,
         },
-    });
+        {
+            true,
+            {},
+        },
+    };
+
+    for (std::size_t sprite_index = 0U; sprite_index < sprite_table_snapshot.size(); ++sprite_index) {
+        runtime_state.sprite_debug_state.sprites[sprite_index] = {
+            sprite_table_snapshot[sprite_index].x,
+            sprite_table_snapshot[sprite_index].y,
+            sprite_table_snapshot[sprite_index].tile_index,
+            sprite_table_snapshot[sprite_index].attributes,
+        };
+    }
+
+    frontend.set_runtime_control_state(runtime_state);
 }
 
 template <typename ResetFn, typename LoadRomFn>

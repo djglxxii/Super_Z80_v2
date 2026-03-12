@@ -12,6 +12,8 @@ namespace {
 constexpr uint16_t kMemoryRowsPerPage = 16U;
 constexpr uint16_t kMemoryBytesPerRow = 16U;
 constexpr uint16_t kMemoryPageSize = kMemoryRowsPerPage * kMemoryBytesPerRow;
+constexpr uint16_t kSpriteAttributeTableBase = 0x6000U;
+constexpr uint16_t kSpriteAttributeSizeBytes = 4U;
 
 uint8_t high_byte(uint16_t value) {
     return static_cast<uint8_t>((value >> 8U) & 0x00FFU);
@@ -228,6 +230,7 @@ void DebugPanelHost::render(const std::string& runtime_name) {
 
     render_memory_viewer();
     render_vram_viewer();
+    render_sprite_debug_panel();
 }
 
 void DebugPanelHost::end_frame() {
@@ -416,6 +419,55 @@ void DebugPanelHost::render_vram_viewer() {
         }
     }
     ImGui::EndChild();
+    ImGui::End();
+}
+
+void DebugPanelHost::render_sprite_debug_panel() {
+    ImGui::Begin("Sprite Debug");
+    if (!runtime_control_state_.sprite_debug_state.available) {
+        ImGui::TextUnformatted("Sprite debug state is unavailable.");
+        ImGui::End();
+        return;
+    }
+
+    ImGui::Text("SAT Base: %04X  Entries: %u  Entry Size: %u bytes",
+                static_cast<unsigned int>(kSpriteAttributeTableBase),
+                static_cast<unsigned int>(runtime_control_state_.sprite_debug_state.sprites.size()),
+                static_cast<unsigned int>(kSpriteAttributeSizeBytes));
+    ImGui::Separator();
+
+    if (ImGui::BeginTable("sprite-debug-table",
+                          5,
+                          ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                              ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit,
+                          ImVec2(0.0f, 320.0f))) {
+        ImGui::TableSetupColumn("Index");
+        ImGui::TableSetupColumn("X");
+        ImGui::TableSetupColumn("Y");
+        ImGui::TableSetupColumn("Tile");
+        ImGui::TableSetupColumn("Attr");
+        ImGui::TableHeadersRow();
+
+        for (std::size_t sprite_index = 0U;
+             sprite_index < runtime_control_state_.sprite_debug_state.sprites.size();
+             ++sprite_index) {
+            const SpriteDebugEntry& sprite = runtime_control_state_.sprite_debug_state.sprites[sprite_index];
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("%02u", static_cast<unsigned int>(sprite_index));
+            ImGui::TableNextColumn();
+            ImGui::Text("%02X", static_cast<unsigned int>(sprite.x));
+            ImGui::TableNextColumn();
+            ImGui::Text("%02X", static_cast<unsigned int>(sprite.y));
+            ImGui::TableNextColumn();
+            ImGui::Text("%02X", static_cast<unsigned int>(sprite.tile_index));
+            ImGui::TableNextColumn();
+            ImGui::Text("%02X", static_cast<unsigned int>(sprite.attributes));
+        }
+
+        ImGui::EndTable();
+    }
+
     ImGui::End();
 }
 

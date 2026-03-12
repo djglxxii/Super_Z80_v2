@@ -37,6 +37,18 @@ struct VramViewerState {
     std::array<uint8_t, 0x10000U> vram = {};
 };
 
+struct SpriteDebugEntry {
+    uint8_t x = 0U;
+    uint8_t y = 0U;
+    uint8_t tile_index = 0U;
+    uint8_t attributes = 0U;
+};
+
+struct SpriteDebugState {
+    bool available = false;
+    std::array<SpriteDebugEntry, 64U> sprites = {};
+};
+
 struct RuntimeControlState {
     bool running = true;
     unsigned int frame_counter = 0U;
@@ -47,6 +59,7 @@ struct RuntimeControlState {
     CpuDebugState cpu_debug_state = {};
     MemoryViewerState memory_viewer_state = {};
     VramViewerState vram_viewer_state = {};
+    SpriteDebugState sprite_debug_state = {};
 };
 
 struct RuntimeControlCommands {
@@ -77,6 +90,7 @@ private:
     void sync_rom_path_input();
     void render_memory_viewer();
     void render_vram_viewer();
+    void render_sprite_debug_panel();
     void clamp_memory_view_start();
     void clamp_vram_view_start();
 
