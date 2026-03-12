@@ -279,6 +279,7 @@ void populate_frontend_runtime_state(superz80::frontend::Frontend& frontend,
                                      const RuntimeLoopState& loop_state,
                                      const EmulatorCore& core) {
     const EmulatorCore::CpuSnapshot cpu_snapshot = core.cpu_snapshot();
+    const EmulatorCore::DmaSnapshot dma_snapshot = core.dma_snapshot();
     const EmulatorCore::RomSnapshot rom_snapshot = core.rom_snapshot();
     const EmulatorCore::RamSnapshot ram_snapshot = core.ram_snapshot();
     const EmulatorCore::VramSnapshot vram_snapshot = core.vram_snapshot();
@@ -320,6 +321,14 @@ void populate_frontend_runtime_state(superz80::frontend::Frontend& frontend,
         {
             true,
             {},
+        },
+        {
+            true,
+            dma_snapshot.source_address,
+            dma_snapshot.destination_address,
+            dma_snapshot.transfer_length,
+            dma_snapshot.control,
+            dma_snapshot.active,
         },
     };
 

@@ -8,6 +8,14 @@ class Bus;
 
 class DMA {
 public:
+    struct Snapshot {
+        uint16_t source_address = 0U;
+        uint16_t destination_address = 0U;
+        uint8_t transfer_length = 0U;
+        uint8_t control = 0U;
+        bool active = false;
+    };
+
     static constexpr uint8_t kSrcLowPort = 0xF4U;
     static constexpr uint8_t kSrcHighPort = 0xF5U;
     static constexpr uint8_t kDstLowPort = 0xF6U;
@@ -27,6 +35,7 @@ public:
     void step();
 
     bool busy() const;
+    Snapshot snapshot() const;
 
 private:
     Bus& bus_;

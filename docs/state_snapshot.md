@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M51
+M52
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,13 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M52 complete.
+- The frontend now exposes a read-only `DMA Debug` ImGui panel that displays the live DMA source address, destination address, transfer length, CPU-visible control register value, and active/idle status refreshed every rendered frame.
+- Added a narrow read-only DMA snapshot accessor on `DMA`, exposed through `EmulatorCore`, so the frontend can inspect DMA register state without holding mutable core references or altering deterministic execution flow.
+- Core unit coverage now verifies DMA snapshots in both idle and active states, including source/destination register values, transfer length, and the busy-bit control value.
+- Headless ROM execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xC5117D35`.
+- CI-safe SDL smoke checks still succeed under dummy/software drivers for both `--sdl-input --rom rom/showcase/build/showcase.bin` and `--sdl-audio --rom rom/showcase/build/showcase.bin`, confirming the DMA debug panel startup path without changing headless execution behavior.
+- The next official frontend milestone is now `M53 - Audio Debug Panel`.
 - M51 complete.
 - The frontend now exposes a read-only `Sprite Debug` ImGui panel that displays all `64` sprite attribute table entries with sprite index, `X`, `Y`, tile index, and raw attribute-byte values refreshed every rendered frame.
 - Added a narrow read-only sprite table snapshot accessor on `EmulatorCore` that decodes SAT entries from VDP VRAM using the existing `Y/X/Tile/Attr` layout without exposing mutable VDP references or altering deterministic execution flow.

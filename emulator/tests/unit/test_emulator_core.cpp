@@ -49,7 +49,15 @@ int main() {
     core.bus().vdp().write_vram(static_cast<uint16_t>(last_sprite_base + 1U), 0xBBU);
     core.bus().vdp().write_vram(static_cast<uint16_t>(last_sprite_base + 2U), 0xCCU);
     core.bus().vdp().write_vram(static_cast<uint16_t>(last_sprite_base + 3U), 0xDDU);
+    core.bus().write_port(superz80::Bus::kDmaSrcLowPort, 0x00U);
+    core.bus().write_port(superz80::Bus::kDmaSrcHighPort, 0xC0U);
+    core.bus().write_port(superz80::Bus::kDmaDstLowPort, 0x20U);
+    core.bus().write_port(superz80::Bus::kDmaDstHighPort, 0xC0U);
+    core.bus().write_port(superz80::Bus::kDmaLengthPort, 0x02U);
 
+    const EmulatorCore::DmaSnapshot dma_idle_snapshot = core.dma_snapshot();
+    core.bus().write_port(superz80::Bus::kDmaControlPort, superz80::DMA::kControlStartBit);
+    const EmulatorCore::DmaSnapshot dma_active_snapshot = core.dma_snapshot();
     const EmulatorCore::RomSnapshot rom_snapshot = core.rom_snapshot();
     const EmulatorCore::RamSnapshot ram_snapshot = core.ram_snapshot();
     const EmulatorCore::VramSnapshot vram_snapshot = core.vram_snapshot();
@@ -64,6 +72,26 @@ int main() {
     ok = expect_equal_u8("vram-snapshot-byte-0", vram_snapshot[0x0000U], 0x56U) && ok;
     ok = expect_equal_u8("vram-snapshot-byte-1234", vram_snapshot[0x1234U], 0x78U) && ok;
     ok = expect_equal_u8("vram-snapshot-last-byte", vram_snapshot[0xFFFFU], 0x9AU) && ok;
+    ok = expect_equal_u8("dma-snapshot-idle-src-low",
+                         static_cast<uint8_t>(dma_idle_snapshot.source_address & 0x00FFU),
+                         0x00U) && ok;
+    ok = expect_equal_u8("dma-snapshot-idle-src-high",
+                         static_cast<uint8_t>((dma_idle_snapshot.source_address >> 8U) & 0x00FFU),
+                         0xC0U) && ok;
+    ok = expect_equal_u8("dma-snapshot-idle-dst-low",
+                         static_cast<uint8_t>(dma_idle_snapshot.destination_address & 0x00FFU),
+                         0x20U) && ok;
+    ok = expect_equal_u8("dma-snapshot-idle-dst-high",
+                         static_cast<uint8_t>((dma_idle_snapshot.destination_address >> 8U) & 0x00FFU),
+                         0xC0U) && ok;
+    ok = expect_equal_u8("dma-snapshot-idle-length", dma_idle_snapshot.transfer_length, 0x02U) && ok;
+    ok = expect_equal_u8("dma-snapshot-idle-control", dma_idle_snapshot.control, 0x00U) && ok;
+    ok = expect_equal_u8("dma-snapshot-active-control",
+                         dma_active_snapshot.control,
+                         superz80::DMA::kControlBusyBit) && ok;
+    ok = expect_equal_u8("dma-snapshot-active-flag",
+                         static_cast<uint8_t>(dma_active_snapshot.active ? 1U : 0U),
+                         0x01U) && ok;
     ok = expect_equal_u8("sprite-snapshot-first-y", sprite_table_snapshot[0U].y, 0x10U) && ok;
     ok = expect_equal_u8("sprite-snapshot-first-x", sprite_table_snapshot[0U].x, 0x20U) && ok;
     ok = expect_equal_u8("sprite-snapshot-first-tile", sprite_table_snapshot[0U].tile_index, 0x30U) && ok;

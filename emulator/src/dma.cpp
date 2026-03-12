@@ -86,4 +86,14 @@ bool DMA::busy() const {
     return active_;
 }
 
+DMA::Snapshot DMA::snapshot() const {
+    return {
+        src_,
+        dst_,
+        length_,
+        read_register(kControlPort),
+        active_,
+    };
+}
+
 } // namespace superz80

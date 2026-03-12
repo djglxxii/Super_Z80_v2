@@ -49,6 +49,15 @@ struct SpriteDebugState {
     std::array<SpriteDebugEntry, 64U> sprites = {};
 };
 
+struct DmaDebugState {
+    bool available = false;
+    uint16_t source_address = 0U;
+    uint16_t destination_address = 0U;
+    uint8_t transfer_length = 0U;
+    uint8_t control = 0U;
+    bool active = false;
+};
+
 struct RuntimeControlState {
     bool running = true;
     unsigned int frame_counter = 0U;
@@ -60,6 +69,7 @@ struct RuntimeControlState {
     MemoryViewerState memory_viewer_state = {};
     VramViewerState vram_viewer_state = {};
     SpriteDebugState sprite_debug_state = {};
+    DmaDebugState dma_debug_state = {};
 };
 
 struct RuntimeControlCommands {
@@ -91,6 +101,7 @@ private:
     void render_memory_viewer();
     void render_vram_viewer();
     void render_sprite_debug_panel();
+    void render_dma_debug_panel();
     void clamp_memory_view_start();
     void clamp_vram_view_start();
 

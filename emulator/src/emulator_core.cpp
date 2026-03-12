@@ -75,6 +75,10 @@ EmulatorCore::CpuSnapshot EmulatorCore::cpu_snapshot() const {
     return cpu_.snapshot();
 }
 
+EmulatorCore::DmaSnapshot EmulatorCore::dma_snapshot() const {
+    return bus_.dma().snapshot();
+}
+
 EmulatorCore::RomSnapshot EmulatorCore::rom_snapshot() const {
     RomSnapshot snapshot = {};
     for (std::size_t offset = 0U; offset < snapshot.size(); ++offset) {

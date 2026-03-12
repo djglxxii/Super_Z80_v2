@@ -8,12 +8,14 @@
 #include "apu.h"
 #include "bus.h"
 #include "cpu.h"
+#include "dma.h"
 #include "scheduler.h"
 
 class EmulatorCore {
 public:
     using AudioSample = superz80::APU::Sample;
     using CpuSnapshot = superz80::CPU::RegisterSnapshot;
+    using DmaSnapshot = superz80::DMA::Snapshot;
     using RomSnapshot = std::array<uint8_t, superz80::Bus::kRomSize>;
     using RamSnapshot = std::array<uint8_t, superz80::Bus::kRamWindowSize>;
     using VramSnapshot = std::array<uint8_t, superz80::VDP::kVramSize>;
@@ -42,6 +44,7 @@ public:
     std::size_t available_audio_samples() const;
     std::size_t consume_audio_samples(AudioSample* destination, std::size_t max_samples);
     CpuSnapshot cpu_snapshot() const;
+    DmaSnapshot dma_snapshot() const;
     RomSnapshot rom_snapshot() const;
     RamSnapshot ram_snapshot() const;
     VramSnapshot vram_snapshot() const;

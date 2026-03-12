@@ -231,6 +231,7 @@ void DebugPanelHost::render(const std::string& runtime_name) {
     render_memory_viewer();
     render_vram_viewer();
     render_sprite_debug_panel();
+    render_dma_debug_panel();
 }
 
 void DebugPanelHost::end_frame() {
@@ -468,6 +469,26 @@ void DebugPanelHost::render_sprite_debug_panel() {
         ImGui::EndTable();
     }
 
+    ImGui::End();
+}
+
+void DebugPanelHost::render_dma_debug_panel() {
+    ImGui::Begin("DMA Debug");
+    if (!runtime_control_state_.dma_debug_state.available) {
+        ImGui::TextUnformatted("DMA debug state is unavailable.");
+        ImGui::End();
+        return;
+    }
+
+    const DmaDebugState& dma = runtime_control_state_.dma_debug_state;
+    ImGui::Text("Source:      %04X", static_cast<unsigned int>(dma.source_address));
+    ImGui::Text("Destination: %04X", static_cast<unsigned int>(dma.destination_address));
+    ImGui::Text("Length:      %02X", static_cast<unsigned int>(dma.transfer_length));
+    ImGui::Text("Control:     %02X", static_cast<unsigned int>(dma.control));
+    ImGui::Separator();
+    ImGui::Text("Status:      %s", dma.active ? "ACTIVE" : "IDLE");
+    ImGui::Text("Busy Bit:    %s",
+                (dma.control & 0x80U) != 0U ? "SET" : "CLEAR");
     ImGui::End();
 }
 
