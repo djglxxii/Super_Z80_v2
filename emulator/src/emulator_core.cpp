@@ -91,6 +91,14 @@ EmulatorCore::RamSnapshot EmulatorCore::ram_snapshot() const {
     return snapshot;
 }
 
+EmulatorCore::VramSnapshot EmulatorCore::vram_snapshot() const {
+    VramSnapshot snapshot = {};
+    for (std::size_t offset = 0U; offset < snapshot.size(); ++offset) {
+        snapshot[offset] = bus_.vdp().vram(static_cast<uint16_t>(offset));
+    }
+    return snapshot;
+}
+
 uint32_t EmulatorCore::frame() const {
     return scheduler_.frame();
 }

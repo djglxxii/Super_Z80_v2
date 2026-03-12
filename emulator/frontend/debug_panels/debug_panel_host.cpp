@@ -41,6 +41,7 @@ void DebugPanelHost::initialize() {
     load_rom_popup_open_ = false;
     memory_region_ = MemoryRegion::Rom;
     memory_view_start_address_ = 0x0000U;
+    vram_view_start_address_ = 0x0000U;
     rom_path_input_.fill('\0');
     rom_path_input_cache_.clear();
 }
@@ -52,6 +53,7 @@ void DebugPanelHost::shutdown() {
     load_rom_popup_open_ = false;
     memory_region_ = MemoryRegion::Rom;
     memory_view_start_address_ = 0x0000U;
+    vram_view_start_address_ = 0x0000U;
     rom_path_input_.fill('\0');
     rom_path_input_cache_.clear();
 }
@@ -225,6 +227,7 @@ void DebugPanelHost::render(const std::string& runtime_name) {
     ImGui::End();
 
     render_memory_viewer();
+    render_vram_viewer();
 }
 
 void DebugPanelHost::end_frame() {
@@ -347,6 +350,83 @@ void DebugPanelHost::clamp_memory_view_start() {
     }
     if (memory_view_start_address_ > max_start) {
         memory_view_start_address_ = max_start;
+    }
+}
+
+void DebugPanelHost::render_vram_viewer() {
+    ImGui::Begin("VRAM Viewer");
+    if (!runtime_control_state_.vram_viewer_state.available) {
+        ImGui::TextUnformatted("VRAM viewer state is unavailable.");
+        ImGui::End();
+        return;
+    }
+
+    clamp_vram_view_start();
+
+    uint32_t start_address = vram_view_start_address_;
+    ImGui::SetNextItemWidth(120.0f);
+    if (ImGui::InputScalar("Start", ImGuiDataType_U32, &start_address, nullptr, nullptr, "%04X",
+                           ImGuiInputTextFlags_CharsHexadecimal)) {
+        vram_view_start_address_ = start_address & 0xFFFFU;
+        clamp_vram_view_start();
+    }
+
+    if (ImGui::Button("Prev Page")) {
+        vram_view_start_address_ =
+            vram_view_start_address_ >= kMemoryPageSize
+                ? vram_view_start_address_ - kMemoryPageSize
+                : 0U;
+        clamp_vram_view_start();
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Next Page")) {
+        vram_view_start_address_ += kMemoryPageSize;
+        clamp_vram_view_start();
+    }
+
+    ImGui::Separator();
+    ImGui::Text("Range: %04X-%04X  Size: %u bytes",
+                0U,
+                0xFFFFU,
+                static_cast<unsigned int>(runtime_control_state_.vram_viewer_state.vram.size()));
+
+    if (ImGui::BeginChild("vram-viewer-scroll", ImVec2(0.0f, 0.0f), true,
+                          ImGuiWindowFlags_HorizontalScrollbar)) {
+        for (uint16_t row = 0U; row < kMemoryRowsPerPage; ++row) {
+            const uint32_t address = vram_view_start_address_ +
+                                     (static_cast<uint32_t>(row) * kMemoryBytesPerRow);
+            if (address >= runtime_control_state_.vram_viewer_state.vram.size()) {
+                break;
+            }
+
+            ImGui::Text("%04X:", static_cast<unsigned int>(address));
+            ImGui::SameLine();
+
+            for (uint16_t column = 0U; column < kMemoryBytesPerRow; ++column) {
+                const std::size_t index = static_cast<std::size_t>(address) + column;
+                if (index >= runtime_control_state_.vram_viewer_state.vram.size()) {
+                    break;
+                }
+
+                ImGui::SameLine();
+                ImGui::Text("%02X",
+                            static_cast<unsigned int>(runtime_control_state_.vram_viewer_state.vram[index]));
+            }
+        }
+    }
+    ImGui::EndChild();
+    ImGui::End();
+}
+
+void DebugPanelHost::clamp_vram_view_start() {
+    const uint32_t max_start = static_cast<uint32_t>(
+        runtime_control_state_.vram_viewer_state.vram.size() > kMemoryPageSize
+            ? runtime_control_state_.vram_viewer_state.vram.size() - kMemoryPageSize
+            : 0U);
+
+    if (vram_view_start_address_ > max_start) {
+        vram_view_start_address_ = max_start;
     }
 }
 

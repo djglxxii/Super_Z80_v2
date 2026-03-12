@@ -16,6 +16,7 @@ public:
     using CpuSnapshot = superz80::CPU::RegisterSnapshot;
     using RomSnapshot = std::array<uint8_t, superz80::Bus::kRomSize>;
     using RamSnapshot = std::array<uint8_t, superz80::Bus::kRamWindowSize>;
+    using VramSnapshot = std::array<uint8_t, superz80::VDP::kVramSize>;
 
     static constexpr uint32_t kAudioMasterClockHz = 3579545U;
     static constexpr uint32_t kVideoFramesPerSecond = 60U;
@@ -36,6 +37,7 @@ public:
     CpuSnapshot cpu_snapshot() const;
     RomSnapshot rom_snapshot() const;
     RamSnapshot ram_snapshot() const;
+    VramSnapshot vram_snapshot() const;
     uint32_t frame() const;
     uint32_t scanline() const;
 
