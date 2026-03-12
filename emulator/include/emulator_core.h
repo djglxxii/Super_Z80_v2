@@ -14,11 +14,13 @@
 class EmulatorCore {
 public:
     using AudioSample = superz80::APU::Sample;
+    using ApuSnapshot = superz80::APU::Snapshot;
     using CpuSnapshot = superz80::CPU::RegisterSnapshot;
     using DmaSnapshot = superz80::DMA::Snapshot;
     using RomSnapshot = std::array<uint8_t, superz80::Bus::kRomSize>;
     using RamSnapshot = std::array<uint8_t, superz80::Bus::kRamWindowSize>;
     using VramSnapshot = std::array<uint8_t, superz80::VDP::kVramSize>;
+    using Ym2151Snapshot = superz80::YM2151::Snapshot;
     struct SpriteSnapshot {
         uint8_t x = 0U;
         uint8_t y = 0U;
@@ -26,6 +28,10 @@ public:
         uint8_t attributes = 0U;
     };
     using SpriteTableSnapshot = std::array<SpriteSnapshot, superz80::VDP::kMaxSprites>;
+    struct AudioSnapshot {
+        ApuSnapshot apu = {};
+        Ym2151Snapshot ym2151 = {};
+    };
 
     static constexpr uint32_t kAudioMasterClockHz = 3579545U;
     static constexpr uint32_t kVideoFramesPerSecond = 60U;
@@ -45,6 +51,7 @@ public:
     std::size_t consume_audio_samples(AudioSample* destination, std::size_t max_samples);
     CpuSnapshot cpu_snapshot() const;
     DmaSnapshot dma_snapshot() const;
+    AudioSnapshot audio_snapshot() const;
     RomSnapshot rom_snapshot() const;
     RamSnapshot ram_snapshot() const;
     VramSnapshot vram_snapshot() const;

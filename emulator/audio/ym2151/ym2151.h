@@ -63,6 +63,33 @@ public:
     static constexpr uint8_t kTimerAStatusBit = 0x01U;
     static constexpr uint8_t kTimerBStatusBit = 0x02U;
 
+    struct ChannelSnapshot {
+        uint16_t frequency = 0U;
+        uint8_t block = 0U;
+        uint8_t algorithm = 0U;
+        uint8_t feedback = 0U;
+        uint8_t key_on_mask = 0U;
+    };
+    struct TimerSnapshot {
+        uint16_t latch = 0U;
+        uint32_t counter = 0U;
+        bool enabled = false;
+        bool overflow = false;
+        bool irq_enabled = false;
+    };
+    struct Snapshot {
+        uint8_t selected_register = 0U;
+        std::array<uint8_t, kRegisterCount> registers = {};
+        std::array<ChannelSnapshot, kChannelCount> channels = {};
+        TimerSnapshot timer_a = {};
+        TimerSnapshot timer_b = {};
+        uint8_t status = 0U;
+        bool irq_pending = false;
+        int16_t current_sample = 0;
+        uint64_t tick_call_count = 0U;
+        uint64_t accumulated_cycles = 0U;
+    };
+
     YM2151();
 
     void reset();
@@ -80,6 +107,7 @@ public:
     int16_t current_sample() const override;
     uint64_t tick_call_count() const;
     uint64_t accumulated_cycles() const;
+    Snapshot snapshot() const;
 
 private:
     static constexpr uint32_t kSineTableSize = 1024U;

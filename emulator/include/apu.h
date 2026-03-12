@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 
@@ -16,6 +17,29 @@ public:
 class APU : public AudioSampleSource {
 public:
     using Sample = int16_t;
+    struct ToneChannelSnapshot {
+        uint16_t period = 0U;
+        uint8_t volume = 0U;
+        uint16_t divider_counter = 0U;
+        bool phase_high = false;
+    };
+    struct NoiseChannelSnapshot {
+        uint8_t control = 0U;
+        uint8_t volume = 0U;
+        uint16_t divider_counter = 0U;
+        uint16_t lfsr = 0U;
+        uint8_t output_bit = 0U;
+    };
+    struct Snapshot {
+        std::array<uint8_t, 12U> registers = {};
+        std::array<ToneChannelSnapshot, 3U> tone_channels = {};
+        NoiseChannelSnapshot noise = {};
+        uint8_t control = 0U;
+        bool enabled = false;
+        bool muted = false;
+        bool overrun = false;
+        int16_t current_sample = 0;
+    };
 
     static constexpr uint8_t kToneALowPort = 0xD0U;
     static constexpr uint8_t kToneAHighPort = 0xD1U;
@@ -56,6 +80,7 @@ public:
     const APUSampleOutputState& sample_output_state() const;
     uint16_t noise_lfsr() const;
     uint8_t noise_output_bit() const;
+    Snapshot snapshot() const;
 
 private:
     static constexpr std::size_t kToneAChannel = 0U;

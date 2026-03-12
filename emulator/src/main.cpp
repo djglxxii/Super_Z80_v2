@@ -280,6 +280,7 @@ void populate_frontend_runtime_state(superz80::frontend::Frontend& frontend,
                                      const EmulatorCore& core) {
     const EmulatorCore::CpuSnapshot cpu_snapshot = core.cpu_snapshot();
     const EmulatorCore::DmaSnapshot dma_snapshot = core.dma_snapshot();
+    const EmulatorCore::AudioSnapshot audio_snapshot = core.audio_snapshot();
     const EmulatorCore::RomSnapshot rom_snapshot = core.rom_snapshot();
     const EmulatorCore::RamSnapshot ram_snapshot = core.ram_snapshot();
     const EmulatorCore::VramSnapshot vram_snapshot = core.vram_snapshot();
@@ -330,6 +331,51 @@ void populate_frontend_runtime_state(superz80::frontend::Frontend& frontend,
             dma_snapshot.control,
             dma_snapshot.active,
         },
+        {
+            true,
+            {
+                true,
+                audio_snapshot.apu.registers,
+                {},
+                {
+                    audio_snapshot.apu.noise.control,
+                    audio_snapshot.apu.noise.volume,
+                    audio_snapshot.apu.noise.divider_counter,
+                    audio_snapshot.apu.noise.lfsr,
+                    audio_snapshot.apu.noise.output_bit,
+                },
+                audio_snapshot.apu.control,
+                audio_snapshot.apu.enabled,
+                audio_snapshot.apu.muted,
+                audio_snapshot.apu.overrun,
+                audio_snapshot.apu.current_sample,
+            },
+            {
+                true,
+                audio_snapshot.ym2151.selected_register,
+                audio_snapshot.ym2151.registers,
+                {},
+                {
+                    audio_snapshot.ym2151.timer_a.latch,
+                    audio_snapshot.ym2151.timer_a.counter,
+                    audio_snapshot.ym2151.timer_a.enabled,
+                    audio_snapshot.ym2151.timer_a.overflow,
+                    audio_snapshot.ym2151.timer_a.irq_enabled,
+                },
+                {
+                    audio_snapshot.ym2151.timer_b.latch,
+                    audio_snapshot.ym2151.timer_b.counter,
+                    audio_snapshot.ym2151.timer_b.enabled,
+                    audio_snapshot.ym2151.timer_b.overflow,
+                    audio_snapshot.ym2151.timer_b.irq_enabled,
+                },
+                audio_snapshot.ym2151.status,
+                audio_snapshot.ym2151.irq_pending,
+                audio_snapshot.ym2151.current_sample,
+                audio_snapshot.ym2151.tick_call_count,
+                audio_snapshot.ym2151.accumulated_cycles,
+            },
+        },
     };
 
     for (std::size_t sprite_index = 0U; sprite_index < sprite_table_snapshot.size(); ++sprite_index) {
@@ -338,6 +384,25 @@ void populate_frontend_runtime_state(superz80::frontend::Frontend& frontend,
             sprite_table_snapshot[sprite_index].y,
             sprite_table_snapshot[sprite_index].tile_index,
             sprite_table_snapshot[sprite_index].attributes,
+        };
+    }
+
+    for (std::size_t channel = 0U; channel < audio_snapshot.apu.tone_channels.size(); ++channel) {
+        runtime_state.audio_debug_state.psg.tone_channels[channel] = {
+            audio_snapshot.apu.tone_channels[channel].period,
+            audio_snapshot.apu.tone_channels[channel].volume,
+            audio_snapshot.apu.tone_channels[channel].divider_counter,
+            audio_snapshot.apu.tone_channels[channel].phase_high,
+        };
+    }
+
+    for (std::size_t channel = 0U; channel < audio_snapshot.ym2151.channels.size(); ++channel) {
+        runtime_state.audio_debug_state.ym2151.channels[channel] = {
+            audio_snapshot.ym2151.channels[channel].frequency,
+            audio_snapshot.ym2151.channels[channel].block,
+            audio_snapshot.ym2151.channels[channel].algorithm,
+            audio_snapshot.ym2151.channels[channel].feedback,
+            audio_snapshot.ym2151.channels[channel].key_on_mask,
         };
     }
 

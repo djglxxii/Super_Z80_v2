@@ -232,6 +232,7 @@ void DebugPanelHost::render(const std::string& runtime_name) {
     render_vram_viewer();
     render_sprite_debug_panel();
     render_dma_debug_panel();
+    render_audio_debug_panel();
 }
 
 void DebugPanelHost::end_frame() {
@@ -489,6 +490,149 @@ void DebugPanelHost::render_dma_debug_panel() {
     ImGui::Text("Status:      %s", dma.active ? "ACTIVE" : "IDLE");
     ImGui::Text("Busy Bit:    %s",
                 (dma.control & 0x80U) != 0U ? "SET" : "CLEAR");
+    ImGui::End();
+}
+
+void DebugPanelHost::render_audio_debug_panel() {
+    ImGui::Begin("Audio Debug");
+    if (!runtime_control_state_.audio_debug_state.available) {
+        ImGui::TextUnformatted("Audio debug state is unavailable.");
+        ImGui::End();
+        return;
+    }
+
+    const AudioDebugPsgState& psg = runtime_control_state_.audio_debug_state.psg;
+    const AudioDebugYmState& ym = runtime_control_state_.audio_debug_state.ym2151;
+
+    if (ImGui::CollapsingHeader("PSG", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Text("Enabled: %s", psg.enabled ? "YES" : "NO");
+        ImGui::Text("Muted: %s", psg.muted ? "YES" : "NO");
+        ImGui::Text("Overrun: %s", psg.overrun ? "YES" : "NO");
+        ImGui::Text("Control: %02X", static_cast<unsigned int>(psg.control));
+        ImGui::Text("Current Sample: %d", static_cast<int>(psg.current_sample));
+        ImGui::Separator();
+
+        if (ImGui::BeginTable("audio-debug-psg-channels",
+                              5,
+                              ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                                  ImGuiTableFlags_SizingFixedFit)) {
+            ImGui::TableSetupColumn("Channel");
+            ImGui::TableSetupColumn("Period");
+            ImGui::TableSetupColumn("Volume");
+            ImGui::TableSetupColumn("Divider");
+            ImGui::TableSetupColumn("Phase");
+            ImGui::TableHeadersRow();
+
+            for (std::size_t channel = 0U; channel < psg.tone_channels.size(); ++channel) {
+                const AudioDebugPsgChannelState& state = psg.tone_channels[channel];
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("Tone %c", static_cast<char>('A' + channel));
+                ImGui::TableNextColumn();
+                ImGui::Text("%03X", static_cast<unsigned int>(state.period));
+                ImGui::TableNextColumn();
+                ImGui::Text("%X", static_cast<unsigned int>(state.volume));
+                ImGui::TableNextColumn();
+                ImGui::Text("%03X", static_cast<unsigned int>(state.divider_counter));
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(state.phase_high ? "HIGH" : "LOW");
+            }
+
+            ImGui::EndTable();
+        }
+
+        ImGui::Spacing();
+        ImGui::Text("Noise Ctrl: %02X  Volume: %X  Divider: %03X  LFSR: %04X  Out: %u",
+                    static_cast<unsigned int>(psg.noise.control),
+                    static_cast<unsigned int>(psg.noise.volume),
+                    static_cast<unsigned int>(psg.noise.divider_counter),
+                    static_cast<unsigned int>(psg.noise.lfsr),
+                    static_cast<unsigned int>(psg.noise.output_bit));
+        ImGui::Separator();
+        ImGui::TextUnformatted("Registers");
+        if (ImGui::BeginChild("audio-debug-psg-registers", ImVec2(0.0f, 120.0f), true)) {
+            for (std::size_t index = 0U; index < psg.registers.size(); ++index) {
+                const uint8_t port = static_cast<uint8_t>(0xD0U + index);
+                ImGui::Text("Port %02X: %02X",
+                            static_cast<unsigned int>(port),
+                            static_cast<unsigned int>(psg.registers[index]));
+            }
+        }
+        ImGui::EndChild();
+    }
+
+    if (ImGui::CollapsingHeader("YM2151", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Text("Selected Register: %02X", static_cast<unsigned int>(ym.selected_register));
+        ImGui::Text("Status: %02X", static_cast<unsigned int>(ym.status));
+        ImGui::Text("IRQ Pending: %s", ym.irq_pending ? "YES" : "NO");
+        ImGui::Text("Current Sample: %d", static_cast<int>(ym.current_sample));
+        ImGui::Text("Tick Calls: %llu", static_cast<unsigned long long>(ym.tick_call_count));
+        ImGui::Text("Accumulated Cycles: %llu",
+                    static_cast<unsigned long long>(ym.accumulated_cycles));
+        ImGui::Separator();
+        ImGui::Text("Timer A  Latch: %03X  Counter: %u  Enabled: %s  Overflow: %s  IRQ: %s",
+                    static_cast<unsigned int>(ym.timer_a.latch),
+                    static_cast<unsigned int>(ym.timer_a.counter),
+                    ym.timer_a.enabled ? "YES" : "NO",
+                    ym.timer_a.overflow ? "YES" : "NO",
+                    ym.timer_a.irq_enabled ? "YES" : "NO");
+        ImGui::Text("Timer B  Latch: %02X  Counter: %u  Enabled: %s  Overflow: %s  IRQ: %s",
+                    static_cast<unsigned int>(ym.timer_b.latch),
+                    static_cast<unsigned int>(ym.timer_b.counter),
+                    ym.timer_b.enabled ? "YES" : "NO",
+                    ym.timer_b.overflow ? "YES" : "NO",
+                    ym.timer_b.irq_enabled ? "YES" : "NO");
+        ImGui::Separator();
+
+        if (ImGui::BeginTable("audio-debug-ym-channels",
+                              6,
+                              ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                                  ImGuiTableFlags_SizingFixedFit,
+                              ImVec2(0.0f, 180.0f))) {
+            ImGui::TableSetupColumn("Ch");
+            ImGui::TableSetupColumn("Freq");
+            ImGui::TableSetupColumn("Block");
+            ImGui::TableSetupColumn("Alg");
+            ImGui::TableSetupColumn("Fb");
+            ImGui::TableSetupColumn("KeyOn");
+            ImGui::TableHeadersRow();
+
+            for (std::size_t channel = 0U; channel < ym.channels.size(); ++channel) {
+                const AudioDebugYmChannelState& state = ym.channels[channel];
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", static_cast<unsigned int>(channel));
+                ImGui::TableNextColumn();
+                ImGui::Text("%03X", static_cast<unsigned int>(state.frequency));
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", static_cast<unsigned int>(state.block));
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", static_cast<unsigned int>(state.algorithm));
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", static_cast<unsigned int>(state.feedback));
+                ImGui::TableNextColumn();
+                ImGui::Text("%X", static_cast<unsigned int>(state.key_on_mask));
+            }
+
+            ImGui::EndTable();
+        }
+
+        ImGui::Spacing();
+        ImGui::TextUnformatted("Registers");
+        if (ImGui::BeginChild("audio-debug-ym-registers", ImVec2(0.0f, 220.0f), true,
+                              ImGuiWindowFlags_HorizontalScrollbar)) {
+            for (std::size_t row = 0U; row < ym.registers.size(); row += 16U) {
+                ImGui::Text("%02X:", static_cast<unsigned int>(row));
+                for (std::size_t column = 0U; column < 16U; ++column) {
+                    const std::size_t index = row + column;
+                    ImGui::SameLine();
+                    ImGui::Text("%02X", static_cast<unsigned int>(ym.registers[index]));
+                }
+            }
+        }
+        ImGui::EndChild();
+    }
+
     ImGui::End();
 }
 

@@ -58,6 +58,17 @@ int main() {
     const EmulatorCore::DmaSnapshot dma_idle_snapshot = core.dma_snapshot();
     core.bus().write_port(superz80::Bus::kDmaControlPort, superz80::DMA::kControlStartBit);
     const EmulatorCore::DmaSnapshot dma_active_snapshot = core.dma_snapshot();
+    core.bus().write_port(superz80::Bus::kAudioToneALowPort, 0x34U);
+    core.bus().write_port(superz80::Bus::kAudioToneAHighPort, 0x02U);
+    core.bus().write_port(superz80::Bus::kAudioVolumeAPort, 0x05U);
+    core.bus().write_port(superz80::Bus::kAudioNoiseControlPort, 0x03U);
+    core.bus().write_port(superz80::Bus::kAudioControlPort, 0x01U);
+    core.bus().write_port(superz80::Bus::kYm2151RegisterSelectPort, 0x20U);
+    core.bus().write_port(superz80::Bus::kYm2151RegisterDataPort, 0x2DU);
+    core.bus().write_port(superz80::Bus::kYm2151RegisterSelectPort, 0x28U);
+    core.bus().write_port(superz80::Bus::kYm2151RegisterDataPort, 0x30U);
+    core.step_scanline();
+    const EmulatorCore::AudioSnapshot audio_snapshot = core.audio_snapshot();
     const EmulatorCore::RomSnapshot rom_snapshot = core.rom_snapshot();
     const EmulatorCore::RamSnapshot ram_snapshot = core.ram_snapshot();
     const EmulatorCore::VramSnapshot vram_snapshot = core.vram_snapshot();
@@ -92,6 +103,39 @@ int main() {
     ok = expect_equal_u8("dma-snapshot-active-flag",
                          static_cast<uint8_t>(dma_active_snapshot.active ? 1U : 0U),
                          0x01U) && ok;
+    ok = expect_equal_u8("audio-snapshot-psg-tone-a-low",
+                         audio_snapshot.apu.registers[0U],
+                         0x34U) && ok;
+    ok = expect_equal_u8("audio-snapshot-psg-tone-a-high",
+                         audio_snapshot.apu.registers[1U],
+                         0x02U) && ok;
+    ok = expect_equal_u8("audio-snapshot-psg-volume-a",
+                         audio_snapshot.apu.registers[7U],
+                         0x05U) && ok;
+    ok = expect_equal_u8("audio-snapshot-psg-control",
+                         audio_snapshot.apu.control,
+                         0x01U) && ok;
+    ok = expect_equal_u8("audio-snapshot-psg-enabled",
+                         static_cast<uint8_t>(audio_snapshot.apu.enabled ? 1U : 0U),
+                         0x01U) && ok;
+    ok = expect_equal_u8("audio-snapshot-psg-noise-control",
+                         audio_snapshot.apu.noise.control,
+                         0x03U) && ok;
+    ok = expect_equal_u8("audio-snapshot-ym-register-20",
+                         audio_snapshot.ym2151.registers[0x20U],
+                         0x2DU) && ok;
+    ok = expect_equal_u8("audio-snapshot-ym-selected-register",
+                         audio_snapshot.ym2151.selected_register,
+                         0x28U) && ok;
+    ok = expect_equal_u8("audio-snapshot-ym-channel-0-algorithm",
+                         audio_snapshot.ym2151.channels[0U].algorithm,
+                         0x05U) && ok;
+    ok = expect_equal_u8("audio-snapshot-ym-channel-0-feedback",
+                         audio_snapshot.ym2151.channels[0U].feedback,
+                         0x05U) && ok;
+    ok = expect_equal_u8("audio-snapshot-ym-channel-0-key-on-mask",
+                         audio_snapshot.ym2151.channels[0U].key_on_mask,
+                         0x03U) && ok;
     ok = expect_equal_u8("sprite-snapshot-first-y", sprite_table_snapshot[0U].y, 0x10U) && ok;
     ok = expect_equal_u8("sprite-snapshot-first-x", sprite_table_snapshot[0U].x, 0x20U) && ok;
     ok = expect_equal_u8("sprite-snapshot-first-tile", sprite_table_snapshot[0U].tile_index, 0x30U) && ok;

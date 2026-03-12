@@ -172,6 +172,51 @@ uint64_t YM2151::accumulated_cycles() const {
     return accumulated_cycles_;
 }
 
+YM2151::Snapshot YM2151::snapshot() const {
+    Snapshot snapshot = {};
+    snapshot.selected_register = selected_register_;
+    snapshot.registers = registers_;
+    for (std::size_t channel_index = 0U; channel_index < channels_.size(); ++channel_index) {
+        uint8_t key_on_mask = 0U;
+        for (std::size_t operator_index = 0U;
+             operator_index < channels_[channel_index].operators.size();
+             ++operator_index) {
+            if (channels_[channel_index].operators[operator_index].key_on) {
+                key_on_mask = static_cast<uint8_t>(key_on_mask | (1U << operator_index));
+            }
+        }
+
+        snapshot.channels[channel_index] = {
+            channels_[channel_index].frequency,
+            channels_[channel_index].block,
+            channels_[channel_index].algorithm,
+            channels_[channel_index].feedback,
+            key_on_mask,
+        };
+    }
+
+    snapshot.timer_a = {
+        timer_a_.latch,
+        timer_a_.counter,
+        timer_a_.enabled,
+        timer_a_.overflow,
+        timer_a_.irq_enabled,
+    };
+    snapshot.timer_b = {
+        timer_b_.latch,
+        timer_b_.counter,
+        timer_b_.enabled,
+        timer_b_.overflow,
+        timer_b_.irq_enabled,
+    };
+    snapshot.status = status();
+    snapshot.irq_pending = irq_pending();
+    snapshot.current_sample = last_sample_;
+    snapshot.tick_call_count = tick_call_count_;
+    snapshot.accumulated_cycles = accumulated_cycles_;
+    return snapshot;
+}
+
 void YM2151::apply_register_write(uint8_t reg, uint8_t value) {
     if (reg == kTimerAHighRegister) {
         update_timer_a_latch();

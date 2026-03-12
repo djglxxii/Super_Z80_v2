@@ -184,6 +184,47 @@ uint8_t APU::noise_output_bit() const {
     return static_cast<uint8_t>(noise_runtime_.lfsr & 0x0001U);
 }
 
+APU::Snapshot APU::snapshot() const {
+    Snapshot snapshot = {};
+    snapshot.registers = {
+        read_port(kToneALowPort),
+        read_port(kToneAHighPort),
+        read_port(kToneBLowPort),
+        read_port(kToneBHighPort),
+        read_port(kToneCLowPort),
+        read_port(kToneCHighPort),
+        read_port(kNoiseControlPort),
+        read_port(kVolumeAPort),
+        read_port(kVolumeBPort),
+        read_port(kVolumeCPort),
+        read_port(kVolumeNoisePort),
+        read_port(kControlPort),
+    };
+
+    for (std::size_t channel = 0U; channel < snapshot.tone_channels.size(); ++channel) {
+        snapshot.tone_channels[channel] = {
+            tone_period(channel),
+            volume(channel),
+            tone_runtime_[channel].divider_counter,
+            tone_runtime_[channel].phase_high,
+        };
+    }
+
+    snapshot.noise = {
+        noise_control(),
+        volume(kNoiseChannel),
+        noise_runtime_.divider_counter,
+        noise_lfsr(),
+        noise_output_bit(),
+    };
+    snapshot.control = control();
+    snapshot.enabled = audio_enabled();
+    snapshot.muted = audio_muted();
+    snapshot.overrun = overrun_;
+    snapshot.current_sample = sample_output_state_.current_sample;
+    return snapshot;
+}
+
 void APU::reset_runtime_state() {
     overrun_ = false;
     for (std::size_t channel = 0U; channel < APURegisterState::kToneChannelCount; ++channel) {

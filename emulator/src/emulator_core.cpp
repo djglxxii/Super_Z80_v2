@@ -79,6 +79,13 @@ EmulatorCore::DmaSnapshot EmulatorCore::dma_snapshot() const {
     return bus_.dma().snapshot();
 }
 
+EmulatorCore::AudioSnapshot EmulatorCore::audio_snapshot() const {
+    return {
+        bus_.apu().snapshot(),
+        bus_.ym2151().snapshot(),
+    };
+}
+
 EmulatorCore::RomSnapshot EmulatorCore::rom_snapshot() const {
     RomSnapshot snapshot = {};
     for (std::size_t offset = 0U; offset < snapshot.size(); ++offset) {

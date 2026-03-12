@@ -58,6 +58,69 @@ struct DmaDebugState {
     bool active = false;
 };
 
+struct AudioDebugPsgChannelState {
+    uint16_t period = 0U;
+    uint8_t volume = 0U;
+    uint16_t divider_counter = 0U;
+    bool phase_high = false;
+};
+
+struct AudioDebugPsgNoiseState {
+    uint8_t control = 0U;
+    uint8_t volume = 0U;
+    uint16_t divider_counter = 0U;
+    uint16_t lfsr = 0U;
+    uint8_t output_bit = 0U;
+};
+
+struct AudioDebugPsgState {
+    bool available = false;
+    std::array<uint8_t, 12U> registers = {};
+    std::array<AudioDebugPsgChannelState, 3U> tone_channels = {};
+    AudioDebugPsgNoiseState noise = {};
+    uint8_t control = 0U;
+    bool enabled = false;
+    bool muted = false;
+    bool overrun = false;
+    int16_t current_sample = 0;
+};
+
+struct AudioDebugYmChannelState {
+    uint16_t frequency = 0U;
+    uint8_t block = 0U;
+    uint8_t algorithm = 0U;
+    uint8_t feedback = 0U;
+    uint8_t key_on_mask = 0U;
+};
+
+struct AudioDebugYmTimerState {
+    uint16_t latch = 0U;
+    uint32_t counter = 0U;
+    bool enabled = false;
+    bool overflow = false;
+    bool irq_enabled = false;
+};
+
+struct AudioDebugYmState {
+    bool available = false;
+    uint8_t selected_register = 0U;
+    std::array<uint8_t, 256U> registers = {};
+    std::array<AudioDebugYmChannelState, 8U> channels = {};
+    AudioDebugYmTimerState timer_a = {};
+    AudioDebugYmTimerState timer_b = {};
+    uint8_t status = 0U;
+    bool irq_pending = false;
+    int16_t current_sample = 0;
+    uint64_t tick_call_count = 0U;
+    uint64_t accumulated_cycles = 0U;
+};
+
+struct AudioDebugState {
+    bool available = false;
+    AudioDebugPsgState psg = {};
+    AudioDebugYmState ym2151 = {};
+};
+
 struct RuntimeControlState {
     bool running = true;
     unsigned int frame_counter = 0U;
@@ -70,6 +133,7 @@ struct RuntimeControlState {
     VramViewerState vram_viewer_state = {};
     SpriteDebugState sprite_debug_state = {};
     DmaDebugState dma_debug_state = {};
+    AudioDebugState audio_debug_state = {};
 };
 
 struct RuntimeControlCommands {
@@ -102,6 +166,7 @@ private:
     void render_vram_viewer();
     void render_sprite_debug_panel();
     void render_dma_debug_panel();
+    void render_audio_debug_panel();
     void clamp_memory_view_start();
     void clamp_vram_view_start();
 
