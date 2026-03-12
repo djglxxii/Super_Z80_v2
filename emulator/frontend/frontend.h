@@ -29,6 +29,8 @@ public:
     void begin_frame();
     void render();
     void end_frame();
+    void set_runtime_control_state(const RuntimeControlState& state);
+    RuntimeControlCommands consume_runtime_control_commands();
 
     bool is_initialized() const;
     bool is_ui_available() const;

@@ -128,6 +128,22 @@ void Frontend::end_frame() {
     debug_panel_host_.end_frame();
 }
 
+void Frontend::set_runtime_control_state(const RuntimeControlState& state) {
+    if (!initialized_) {
+        return;
+    }
+
+    debug_panel_host_.set_runtime_control_state(state);
+}
+
+RuntimeControlCommands Frontend::consume_runtime_control_commands() {
+    if (!initialized_) {
+        return {};
+    }
+
+    return debug_panel_host_.consume_runtime_control_commands();
+}
+
 bool Frontend::is_initialized() const {
     return initialized_;
 }

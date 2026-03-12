@@ -219,6 +219,10 @@ int run_headless_rom(EmulatorCore& core, const std::string& rom_path, uint32_t f
 #if defined(SUPER_Z80_HAS_SDL)
 constexpr std::size_t kSdlOutputChunkSamples = 512U;
 
+struct RuntimeLoopState {
+    bool emulation_running = true;
+};
+
 void program_demo_tone(EmulatorCore& core) {
     constexpr uint16_t kToneAPeriod = 254U;
 
@@ -245,6 +249,40 @@ void pump_audio_output(EmulatorCore& core, superz80::SdlAudioOutput& output) {
         }
 
         output.enqueue_samples(chunk.data(), copied_samples);
+    }
+}
+
+void step_one_emulator_frame(EmulatorCore& core) {
+    core.step_scanlines(superz80::Scheduler::kScanlinesPerFrame);
+}
+
+void populate_frontend_runtime_state(superz80::frontend::Frontend& frontend,
+                                     const RuntimeLoopState& loop_state,
+                                     const EmulatorCore& core) {
+    frontend.set_runtime_control_state({
+        loop_state.emulation_running,
+        static_cast<unsigned int>(core.frame()),
+    });
+}
+
+template <typename ResetFn>
+void apply_runtime_control_commands(superz80::frontend::Frontend& frontend,
+                                    RuntimeLoopState& loop_state,
+                                    EmulatorCore& core,
+                                    ResetFn&& reset_runtime) {
+    const superz80::frontend::RuntimeControlCommands commands =
+        frontend.consume_runtime_control_commands();
+
+    if (commands.toggle_run_pause) {
+        loop_state.emulation_running = !loop_state.emulation_running;
+    }
+
+    if (commands.reset_requested) {
+        reset_runtime();
+    }
+
+    if (commands.step_frame_requested && !loop_state.emulation_running) {
+        step_one_emulator_frame(core);
     }
 }
 
@@ -396,12 +434,15 @@ int run_sdl_audio_shell(EmulatorCore& core) {
     pump_audio_output(core, audio_output);
     audio_output.start();
 
+    RuntimeLoopState loop_state = {};
+
     std::cout << "SDL audio shell active. Tone A demo is routed through SDL audio. "
                  "Close the window or press Escape to quit."
               << std::endl;
 
     bool running = true;
     while (running) {
+        populate_frontend_runtime_state(frontend, loop_state, core);
         frontend.begin_frame();
 
         SDL_Event event;
@@ -416,10 +457,25 @@ int run_sdl_audio_shell(EmulatorCore& core) {
             }
         }
 
-        pump_audio_output(core, audio_output);
         SDL_SetRenderDrawColor(renderer, 12, 16, 20, 255);
         SDL_RenderClear(renderer);
         frontend.render();
+
+        apply_runtime_control_commands(
+            frontend,
+            loop_state,
+            core,
+            [&core, &audio_output]() {
+                core.initialize();
+                program_demo_tone(core);
+                pump_audio_output(core, audio_output);
+            });
+
+        if (loop_state.emulation_running) {
+            step_one_emulator_frame(core);
+        }
+
+        pump_audio_output(core, audio_output);
         SDL_RenderPresent(renderer);
         frontend.end_frame();
 
@@ -483,8 +539,11 @@ int run_sdl_input_shell(EmulatorCore& core) {
     std::cout << "SDL input shell active. Arrow keys, Z, X, Enter mapped to PAD1/PAD1_SYS. Close the window or press Escape to quit." << std::endl;
     print_controller_state(core.bus());
 
+    RuntimeLoopState loop_state = {};
+
     bool running = true;
     while (running) {
+        populate_frontend_runtime_state(frontend, loop_state, core);
         frontend.begin_frame();
 
         SDL_Event event;
@@ -532,6 +591,19 @@ int run_sdl_input_shell(EmulatorCore& core) {
         SDL_SetRenderDrawColor(renderer, 12, 16, 20, 255);
         SDL_RenderClear(renderer);
         frontend.render();
+
+        apply_runtime_control_commands(
+            frontend,
+            loop_state,
+            core,
+            [&core]() {
+                core.initialize();
+            });
+
+        if (loop_state.emulation_running) {
+            step_one_emulator_frame(core);
+        }
+
         SDL_RenderPresent(renderer);
         frontend.end_frame();
 

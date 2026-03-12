@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M45
+M46
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,13 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M46 complete.
+- The frontend now exposes an `Emulator Control` ImGui window with run/pause, reset, and single-frame stepping controls plus live execution state and frame-counter text.
+- SDL shell loops now route frontend-issued runtime commands through shell-owned control state, stepping exactly `Scheduler::kScanlinesPerFrame` for both continuous execution and paused single-frame stepping without modifying deterministic core subsystem logic.
+- Runtime reset now reuses the existing startup initialization path from the shell layer, and the SDL audio shell reapplies its demo tone setup after reset so host-facing behavior matches shell startup semantics.
+- Headless ROM execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xC5117D35`.
+- CI-safe SDL smoke checks still succeed under dummy/software drivers for both `--sdl-input` and `--sdl-audio`, confirming frontend startup plus the control-panel path without changing headless execution behavior.
+- The next official frontend milestone is now `M47 - ROM Loader Interface`.
 - M45 complete.
 - Dear ImGui is now vendored under `emulator/vendor/imgui/` and wired into the SDL-capable frontend path using the SDL2 + SDLRenderer2 backends.
 - The frontend lifecycle now owns SDL event forwarding, ImGui frame setup, and rendering of a minimal `Super_Z80 Frontend` diagnostic window without moving UI concerns into deterministic emulator core code.
