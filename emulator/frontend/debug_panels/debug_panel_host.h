@@ -4,7 +4,9 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <string>
+#include <vector>
 
 namespace superz80::frontend {
 
@@ -178,6 +180,8 @@ struct RuntimeControlCommands {
     bool display_scale_change_requested = false;
     unsigned int requested_display_scale = 0U;
     std::string rom_path_to_load;
+    bool rom_browser_directory_changed = false;
+    std::string rom_browser_directory;
 };
 
 class DebugPanelHost {
@@ -186,12 +190,19 @@ public:
     void shutdown();
     void begin_frame();
     void set_display_scale(unsigned int scale);
+    void set_persisted_rom_browser_directory(const std::string& directory);
     void set_runtime_control_state(const RuntimeControlState& state);
     RuntimeControlCommands consume_runtime_control_commands();
     void render(const std::string& runtime_name);
     void end_frame();
 
 private:
+    struct RomBrowserEntry {
+        std::string label;
+        std::string path;
+        bool is_directory = false;
+    };
+
     struct PanelVisibilityState {
         bool emulator_control = true;
         bool debug_overview = true;
@@ -216,6 +227,13 @@ private:
     void request_display_scale(unsigned int scale);
     void render_cpu_debug_panel();
     void sync_rom_path_input();
+    void open_load_rom_popup();
+    void refresh_rom_browser_entries(bool force_reset_selection);
+    void navigate_rom_browser_to(const std::string& directory, bool force_reset_selection);
+    bool is_likely_rom_file(std::string_view extension) const;
+    bool has_rom_browser_selected_file() const;
+    void request_rom_browser_directory_persist(const std::string& directory);
+    void render_load_rom_popup();
     void render_memory_viewer();
     void render_vram_viewer();
     void render_sprite_debug_panel();
@@ -237,6 +255,11 @@ private:
     unsigned int display_scale_ = 2U;
     std::array<char, 512> rom_path_input_ = {};
     std::string rom_path_input_cache_;
+    std::string persisted_rom_browser_directory_;
+    std::string rom_browser_current_directory_;
+    std::string rom_browser_directory_error_;
+    std::vector<RomBrowserEntry> rom_browser_entries_;
+    int rom_browser_selected_index_ = -1;
 };
 
 } // namespace superz80::frontend

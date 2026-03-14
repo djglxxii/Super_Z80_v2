@@ -21,6 +21,7 @@ constexpr unsigned int kDefaultDisplayScale = 2U;
 bool is_supported_display_scale(unsigned int scale);
 DisplayWindowSize window_size_for_display_scale(unsigned int scale);
 unsigned int load_persisted_display_scale();
+std::string load_persisted_rom_browser_directory();
 
 struct FrontendConfig {
     const char* runtime_name = "";
@@ -52,13 +53,14 @@ public:
 private:
     unsigned int sanitized_display_scale(unsigned int requested_scale) const;
     void apply_display_scale(unsigned int scale, bool persist);
-    void persist_display_scale() const;
+    void persist_settings() const;
 
     bool initialized_;
     bool ui_initialized_;
     std::string runtime_name_;
     std::string imgui_ini_path_;
     std::string frontend_settings_path_;
+    std::string persisted_rom_browser_directory_;
     unsigned int display_scale_ = kDefaultDisplayScale;
 #if defined(SUPER_Z80_HAS_SDL)
     SDL_Window* window_ = nullptr;

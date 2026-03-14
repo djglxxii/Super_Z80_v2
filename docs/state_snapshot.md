@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M59
+M60
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,14 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M60 complete.
+- The frontend `File -> Load ROM...` flow now opens an in-application ImGui ROM browser that lists the current directory, supports parent/up navigation, allows entering subdirectories, and can load a selected ROM file without manually typing its full path.
+- The ROM browser keeps the existing manual path field as a narrow fallback, marks likely ROM file extensions in the browser list, and reuses the existing runtime-owned ROM load/reset path so reload behavior and emulator-core semantics remain unchanged.
+- Frontend settings persistence now stores `rom_browser_directory=<path>` alongside `display_scale=<n>` in `super_z80_frontend_settings.cfg`, restoring the last browsed directory when available and otherwise defaulting to the current ROM directory or process working directory.
+- Directory enumeration and invalid-path handling stay frontend-local and fail safely with visible status messaging rather than crashing, while headless execution and deterministic scheduler behavior remain unchanged.
+- Headless ROM execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xC5117D35`.
+- CI-safe SDL smoke checks still succeed under dummy/software drivers for both `--sdl-input --rom rom/showcase/build/showcase.bin` and `--sdl-audio --rom rom/showcase/build/showcase.bin`, and an additional temporary-home startup check succeeds with a seeded persisted `rom_browser_directory=rom/showcase/build` configuration.
+- Automated verification confirms build, tests, headless execution, and SDL frontend startup with the new browser-capable settings path; direct manual confirmation of interactive browser opening, directory navigation, and click-driven ROM selection in a real SDL session is still recommended.
 - M59 complete.
 - The SDL frontend now exposes a `View` menu with integer display scale presets `2x`, `4x`, and `6x`, and changing the selected scale resizes the active SDL window immediately without touching emulator-core timing or headless execution.
 - SDL frontend startup now derives its initial window size from the native `256x192` framebuffer dimensions multiplied by the persisted or default scale, so both the input and audio shells open consistently at `512x384`, `1024x768`, or `1536x1152`.
@@ -43,7 +51,6 @@ PCM remains excluded from the platform design.
 - Headless ROM execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xC5117D35`.
 - CI-safe SDL smoke checks still succeed under dummy/software drivers for both `--sdl-input --rom rom/showcase/build/showcase.bin` and `--sdl-audio --rom rom/showcase/build/showcase.bin`, and an additional temporary-home startup check succeeds with a seeded persisted `display_scale=4` configuration.
 - Automated verification confirms build, tests, headless execution, and persisted-scale SDL startup behavior; manual visual confirmation of actual on-screen window dimensions and menu-driven scale changes in a real desktop session is still recommended.
-- The next official frontend milestone is now `M60 - ROM Browser Integration`.
 - M58 complete.
 - Frontend stabilization now clamps first-use ImGui window placement and sizing against the active viewport work area so the default debug panels stay visible inside the smaller `640x480` SDL shell windows instead of spawning off-screen.
 - Frontend layout persistence now uses Dear ImGui's built-in ini load/save flow through an SDL preference-directory-backed `super_z80_frontend_layout.ini` path, with fallback to the previous local filename when a preference path is unavailable.

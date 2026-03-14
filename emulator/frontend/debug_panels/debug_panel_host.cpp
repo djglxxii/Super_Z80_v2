@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <filesystem>
+#include <system_error>
 
 #include "imgui.h"
 
@@ -15,6 +17,7 @@ constexpr uint16_t kMemoryPageSize = kMemoryRowsPerPage * kMemoryBytesPerRow;
 constexpr uint16_t kSpriteAttributeTableBase = 0x6000U;
 constexpr uint16_t kSpriteAttributeSizeBytes = 4U;
 constexpr float kWindowMargin = 12.0f;
+constexpr float kRomBrowserListHeight = 280.0f;
 
 constexpr ImGuiCond kInitialWindowLayoutCondition = ImGuiCond_FirstUseEver;
 
@@ -84,6 +87,11 @@ void DebugPanelHost::initialize() {
     display_scale_ = 2U;
     rom_path_input_.fill('\0');
     rom_path_input_cache_.clear();
+    persisted_rom_browser_directory_.clear();
+    rom_browser_current_directory_.clear();
+    rom_browser_directory_error_.clear();
+    rom_browser_entries_.clear();
+    rom_browser_selected_index_ = -1;
 }
 
 void DebugPanelHost::shutdown() {
@@ -98,6 +106,11 @@ void DebugPanelHost::shutdown() {
     display_scale_ = 2U;
     rom_path_input_.fill('\0');
     rom_path_input_cache_.clear();
+    persisted_rom_browser_directory_.clear();
+    rom_browser_current_directory_.clear();
+    rom_browser_directory_error_.clear();
+    rom_browser_entries_.clear();
+    rom_browser_selected_index_ = -1;
 }
 
 void DebugPanelHost::begin_frame() {
@@ -105,6 +118,10 @@ void DebugPanelHost::begin_frame() {
 
 void DebugPanelHost::set_display_scale(unsigned int scale) {
     display_scale_ = scale;
+}
+
+void DebugPanelHost::set_persisted_rom_browser_directory(const std::string& directory) {
+    persisted_rom_browser_directory_ = directory;
 }
 
 void DebugPanelHost::set_runtime_control_state(const RuntimeControlState& state) {
@@ -125,28 +142,10 @@ void DebugPanelHost::render(const std::string& runtime_name) {
     render_menu_bar();
 
     if (load_rom_popup_open_) {
-        sync_rom_path_input();
-        ImGui::OpenPopup("Load ROM");
-        load_rom_popup_open_ = false;
+        open_load_rom_popup();
     }
 
-    if (ImGui::BeginPopupModal("Load ROM", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::TextUnformatted("Enter a ROM path to load into the current runtime.");
-        ImGui::InputText("ROM Path", rom_path_input_.data(), rom_path_input_.size());
-
-        if (ImGui::Button("Load")) {
-            pending_runtime_control_commands_.load_rom_requested = true;
-            pending_runtime_control_commands_.rom_path_to_load = rom_path_input_.data();
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel")) {
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::EndPopup();
-    }
+    render_load_rom_popup();
 
     render_debug_overview_panel(runtime_name);
     render_emulator_control_panel(runtime_name);
@@ -442,6 +441,260 @@ void DebugPanelHost::sync_rom_path_input() {
         std::min(runtime_control_state_.current_rom_path.size(), rom_path_input_.size() - 1U);
     runtime_control_state_.current_rom_path.copy(rom_path_input_.data(), copy_length);
     rom_path_input_cache_ = runtime_control_state_.current_rom_path;
+}
+
+void DebugPanelHost::open_load_rom_popup() {
+    sync_rom_path_input();
+
+    std::filesystem::path start_directory;
+    if (!persisted_rom_browser_directory_.empty()) {
+        start_directory = persisted_rom_browser_directory_;
+    } else if (!runtime_control_state_.current_rom_path.empty()) {
+        start_directory = std::filesystem::path(runtime_control_state_.current_rom_path).parent_path();
+    } else {
+        std::error_code error;
+        start_directory = std::filesystem::current_path(error);
+        if (error) {
+            start_directory.clear();
+        }
+    }
+
+    navigate_rom_browser_to(start_directory.empty() ? std::string(".") : start_directory.string(), true);
+    ImGui::OpenPopup("Load ROM");
+    load_rom_popup_open_ = false;
+}
+
+void DebugPanelHost::refresh_rom_browser_entries(bool force_reset_selection) {
+    rom_browser_entries_.clear();
+    rom_browser_directory_error_.clear();
+
+    namespace fs = std::filesystem;
+
+    if (rom_browser_current_directory_.empty()) {
+        rom_browser_current_directory_ = ".";
+    }
+
+    std::error_code path_error;
+    fs::path current_path = fs::weakly_canonical(fs::path(rom_browser_current_directory_), path_error);
+    if (path_error) {
+        current_path = fs::path(rom_browser_current_directory_);
+    }
+
+    std::error_code type_error;
+    if (!fs::exists(current_path, type_error) || type_error) {
+        rom_browser_directory_error_ = "Directory does not exist.";
+        rom_browser_selected_index_ = -1;
+        return;
+    }
+
+    if (!fs::is_directory(current_path, type_error) || type_error) {
+        rom_browser_directory_error_ = "Path is not a directory.";
+        rom_browser_selected_index_ = -1;
+        return;
+    }
+
+    rom_browser_current_directory_ = current_path.lexically_normal().string();
+
+    std::vector<RomBrowserEntry> directories;
+    std::vector<RomBrowserEntry> files;
+    std::error_code iterator_error;
+    fs::directory_iterator it(current_path, iterator_error);
+    if (iterator_error) {
+        rom_browser_directory_error_ = "Unable to read directory entries.";
+        rom_browser_selected_index_ = -1;
+        return;
+    }
+
+    for (const fs::directory_entry& entry : it) {
+        std::error_code status_error;
+        const fs::path entry_path = entry.path();
+        const bool is_directory = entry.is_directory(status_error);
+        if (status_error) {
+            continue;
+        }
+
+        RomBrowserEntry browser_entry = {
+            entry_path.filename().string(),
+            entry_path.string(),
+            is_directory,
+        };
+
+        if (browser_entry.label.empty()) {
+            browser_entry.label = browser_entry.path;
+        }
+
+        if (is_directory) {
+            directories.push_back(std::move(browser_entry));
+            continue;
+        }
+
+        if (entry.is_regular_file(status_error) && !status_error) {
+            files.push_back(std::move(browser_entry));
+        }
+    }
+
+    const auto compare_entries = [](const RomBrowserEntry& left, const RomBrowserEntry& right) {
+        return left.label < right.label;
+    };
+    std::sort(directories.begin(), directories.end(), compare_entries);
+    std::sort(files.begin(), files.end(), compare_entries);
+
+    rom_browser_entries_ = std::move(directories);
+    for (RomBrowserEntry& entry : files) {
+        if (is_likely_rom_file(std::filesystem::path(entry.path).extension().string())) {
+            entry.label += " [ROM]";
+        }
+        rom_browser_entries_.push_back(std::move(entry));
+    }
+
+    if (force_reset_selection) {
+        rom_browser_selected_index_ = -1;
+    } else if (rom_browser_selected_index_ >= static_cast<int>(rom_browser_entries_.size())) {
+        rom_browser_selected_index_ = -1;
+    }
+
+    request_rom_browser_directory_persist(rom_browser_current_directory_);
+}
+
+void DebugPanelHost::navigate_rom_browser_to(const std::string& directory, bool force_reset_selection) {
+    rom_browser_current_directory_ = directory;
+    refresh_rom_browser_entries(force_reset_selection);
+}
+
+bool DebugPanelHost::is_likely_rom_file(std::string_view extension) const {
+    return extension == ".bin" || extension == ".rom" || extension == ".sms" ||
+           extension == ".z80" || extension == ".img";
+}
+
+bool DebugPanelHost::has_rom_browser_selected_file() const {
+    if (rom_browser_selected_index_ < 0 ||
+        rom_browser_selected_index_ >= static_cast<int>(rom_browser_entries_.size())) {
+        return false;
+    }
+
+    return !rom_browser_entries_[static_cast<std::size_t>(rom_browser_selected_index_)].is_directory;
+}
+
+void DebugPanelHost::request_rom_browser_directory_persist(const std::string& directory) {
+    pending_runtime_control_commands_.rom_browser_directory_changed = true;
+    pending_runtime_control_commands_.rom_browser_directory = directory;
+}
+
+void DebugPanelHost::render_load_rom_popup() {
+    if (!ImGui::BeginPopupModal("Load ROM", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        return;
+    }
+
+    ImGui::TextUnformatted("Browse to a ROM file and load it into the current runtime.");
+    ImGui::Separator();
+    ImGui::TextWrapped("Directories are listed first. Selecting a file fills the path field below. "
+                       "The current ROM path remains available as a manual fallback.");
+    ImGui::Spacing();
+
+    ImGui::Text("Current Directory:");
+    ImGui::SameLine();
+    ImGui::TextWrapped("%s", rom_browser_current_directory_.empty() ? "<unavailable>"
+                                                                    : rom_browser_current_directory_.c_str());
+
+    const bool has_parent =
+        !rom_browser_current_directory_.empty() &&
+        std::filesystem::path(rom_browser_current_directory_).has_parent_path();
+    if (!has_parent) {
+        ImGui::BeginDisabled();
+    }
+    if (ImGui::Button("Up")) {
+        const std::filesystem::path parent =
+            std::filesystem::path(rom_browser_current_directory_).parent_path();
+        navigate_rom_browser_to(parent.empty() ? std::string(".") : parent.string(), true);
+    }
+    if (!has_parent) {
+        ImGui::EndDisabled();
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Refresh")) {
+        refresh_rom_browser_entries(false);
+    }
+
+    if (!rom_browser_directory_error_.empty()) {
+        ImGui::TextColored(ImVec4(0.93f, 0.33f, 0.30f, 1.0f), "%s",
+                           rom_browser_directory_error_.c_str());
+    }
+
+    if (ImGui::BeginChild("rom-browser-entries", ImVec2(520.0f, kRomBrowserListHeight), true)) {
+        for (std::size_t entry_index = 0U; entry_index < rom_browser_entries_.size(); ++entry_index) {
+            const RomBrowserEntry& entry = rom_browser_entries_[entry_index];
+            const bool selected = rom_browser_selected_index_ == static_cast<int>(entry_index);
+            std::string item_label = entry.is_directory ? "[DIR] " + entry.label : entry.label;
+            if (ImGui::Selectable(item_label.c_str(), selected)) {
+                rom_browser_selected_index_ = static_cast<int>(entry_index);
+                if (!entry.is_directory) {
+                    rom_path_input_.fill('\0');
+                    const std::size_t copy_length =
+                        std::min(entry.path.size(), rom_path_input_.size() - 1U);
+                    entry.path.copy(rom_path_input_.data(), copy_length);
+                }
+            }
+
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+                if (entry.is_directory) {
+                    navigate_rom_browser_to(entry.path, true);
+                } else {
+                    pending_runtime_control_commands_.load_rom_requested = true;
+                    pending_runtime_control_commands_.rom_path_to_load = entry.path;
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+        }
+    }
+    ImGui::EndChild();
+
+    if (has_rom_browser_selected_file()) {
+        ImGui::Text("Selected File: %s",
+                    rom_browser_entries_[static_cast<std::size_t>(rom_browser_selected_index_)]
+                        .path.c_str());
+    } else {
+        ImGui::TextUnformatted("Selected File: <none>");
+    }
+
+    ImGui::InputText("ROM Path", rom_path_input_.data(), rom_path_input_.size());
+
+    const bool load_disabled = rom_path_input_[0] == '\0';
+    if (load_disabled) {
+        ImGui::BeginDisabled();
+    }
+    if (ImGui::Button("Load")) {
+        pending_runtime_control_commands_.load_rom_requested = true;
+        pending_runtime_control_commands_.rom_path_to_load = rom_path_input_.data();
+        ImGui::CloseCurrentPopup();
+    }
+    if (load_disabled) {
+        ImGui::EndDisabled();
+    }
+
+    ImGui::SameLine();
+    const bool open_directory_disabled =
+        rom_browser_selected_index_ < 0 ||
+        rom_browser_selected_index_ >= static_cast<int>(rom_browser_entries_.size()) ||
+        !rom_browser_entries_[static_cast<std::size_t>(rom_browser_selected_index_)].is_directory;
+    if (open_directory_disabled) {
+        ImGui::BeginDisabled();
+    }
+    if (ImGui::Button("Open Selected Directory")) {
+        navigate_rom_browser_to(
+            rom_browser_entries_[static_cast<std::size_t>(rom_browser_selected_index_)].path,
+            true);
+    }
+    if (open_directory_disabled) {
+        ImGui::EndDisabled();
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel")) {
+        ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
 }
 
 void DebugPanelHost::render_memory_viewer() {

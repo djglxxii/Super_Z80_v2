@@ -47,6 +47,42 @@ std::string determine_frontend_settings_path() {
 
 constexpr int kNativeFramebufferWidth = 256;
 constexpr int kNativeFramebufferHeight = 192;
+
+struct FrontendSettings {
+    unsigned int display_scale = kDefaultDisplayScale;
+    std::string rom_browser_directory;
+};
+
+FrontendSettings load_frontend_settings() {
+#if defined(SUPER_Z80_HAS_SDL)
+    std::ifstream settings_file(determine_frontend_settings_path());
+    if (!settings_file.is_open()) {
+        return {};
+    }
+
+    FrontendSettings settings = {};
+    std::string line;
+    while (std::getline(settings_file, line)) {
+        if (line.rfind("display_scale=", 0U) == 0U) {
+            std::istringstream value_stream(line.substr(14U));
+            unsigned int persisted_scale = 0U;
+            value_stream >> persisted_scale;
+            if (!value_stream.fail() && is_supported_display_scale(persisted_scale)) {
+                settings.display_scale = persisted_scale;
+            }
+            continue;
+        }
+
+        if (line.rfind("rom_browser_directory=", 0U) == 0U) {
+            settings.rom_browser_directory = line.substr(22U);
+        }
+    }
+
+    return settings;
+#else
+    return {};
+#endif
+}
 } // namespace
 
 Frontend::Frontend()
@@ -66,28 +102,11 @@ DisplayWindowSize window_size_for_display_scale(unsigned int scale) {
 }
 
 unsigned int load_persisted_display_scale() {
-#if defined(SUPER_Z80_HAS_SDL)
-    std::ifstream settings_file(determine_frontend_settings_path());
-    if (!settings_file.is_open()) {
-        return kDefaultDisplayScale;
-    }
+    return load_frontend_settings().display_scale;
+}
 
-    std::string line;
-    while (std::getline(settings_file, line)) {
-        if (line.rfind("display_scale=", 0U) != 0U) {
-            continue;
-        }
-
-        std::istringstream value_stream(line.substr(14U));
-        unsigned int persisted_scale = 0U;
-        value_stream >> persisted_scale;
-        if (!value_stream.fail() && is_supported_display_scale(persisted_scale)) {
-            return persisted_scale;
-        }
-    }
-#endif
-
-    return kDefaultDisplayScale;
+std::string load_persisted_rom_browser_directory() {
+    return load_frontend_settings().rom_browser_directory;
 }
 
 bool Frontend::initialize(const FrontendConfig& config) {
@@ -102,6 +121,8 @@ bool Frontend::initialize(const FrontendConfig& config) {
 
 #if defined(SUPER_Z80_HAS_SDL)
     frontend_settings_path_ = determine_frontend_settings_path();
+    persisted_rom_browser_directory_ = load_persisted_rom_browser_directory();
+    debug_panel_host_.set_persisted_rom_browser_directory(persisted_rom_browser_directory_);
 
     if (config.window != nullptr && config.renderer != nullptr) {
         window_ = config.window;
@@ -121,6 +142,7 @@ bool Frontend::initialize(const FrontendConfig& config) {
             renderer_ = nullptr;
             imgui_ini_path_.clear();
             frontend_settings_path_.clear();
+            persisted_rom_browser_directory_.clear();
             debug_panel_host_.shutdown();
             runtime_name_.clear();
             return false;
@@ -133,6 +155,7 @@ bool Frontend::initialize(const FrontendConfig& config) {
             renderer_ = nullptr;
             imgui_ini_path_.clear();
             frontend_settings_path_.clear();
+            persisted_rom_browser_directory_.clear();
             debug_panel_host_.shutdown();
             runtime_name_.clear();
             return false;
@@ -169,6 +192,7 @@ void Frontend::shutdown() {
     debug_panel_host_.shutdown();
     imgui_ini_path_.clear();
     frontend_settings_path_.clear();
+    persisted_rom_browser_directory_.clear();
     runtime_name_.clear();
     initialized_ = false;
 }
@@ -247,6 +271,13 @@ RuntimeControlCommands Frontend::consume_runtime_control_commands() {
         commands.display_scale_change_requested = false;
         commands.requested_display_scale = 0U;
     }
+    if (commands.rom_browser_directory_changed) {
+        persisted_rom_browser_directory_ = commands.rom_browser_directory;
+        debug_panel_host_.set_persisted_rom_browser_directory(persisted_rom_browser_directory_);
+        persist_settings();
+        commands.rom_browser_directory_changed = false;
+        commands.rom_browser_directory.clear();
+    }
     return commands;
 }
 
@@ -281,11 +312,11 @@ void Frontend::apply_display_scale(unsigned int scale, bool persist) {
 #endif
 
     if (persist) {
-        persist_display_scale();
+        persist_settings();
     }
 }
 
-void Frontend::persist_display_scale() const {
+void Frontend::persist_settings() const {
     if (frontend_settings_path_.empty()) {
         return;
     }
@@ -296,6 +327,7 @@ void Frontend::persist_display_scale() const {
     }
 
     settings_file << "display_scale=" << display_scale_ << '\n';
+    settings_file << "rom_browser_directory=" << persisted_rom_browser_directory_ << '\n';
 }
 
 } // namespace superz80::frontend
