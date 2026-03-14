@@ -189,11 +189,28 @@ public:
     void end_frame();
 
 private:
+    struct PanelVisibilityState {
+        bool emulator_control = true;
+        bool debug_overview = true;
+        bool cpu_debug = true;
+        bool memory_viewer = false;
+        bool vram_viewer = false;
+        bool sprite_debug = false;
+        bool dma_debug = false;
+        bool audio_debug = false;
+        bool input_visualization = false;
+        bool frame_timing_scheduler = true;
+    };
+
     enum class MemoryRegion : uint8_t {
         Rom = 0U,
         Ram = 1U,
     };
 
+    void render_menu_bar();
+    void render_debug_overview_panel(const std::string& runtime_name);
+    void render_emulator_control_panel(const std::string& runtime_name);
+    void render_cpu_debug_panel();
     void sync_rom_path_input();
     void render_memory_viewer();
     void render_vram_viewer();
@@ -209,6 +226,7 @@ private:
     RuntimeControlState runtime_control_state_ = {};
     RuntimeControlCommands pending_runtime_control_commands_ = {};
     bool load_rom_popup_open_ = false;
+    PanelVisibilityState panel_visibility_ = {};
     MemoryRegion memory_region_ = MemoryRegion::Rom;
     uint16_t memory_view_start_address_ = 0x0000U;
     uint32_t vram_view_start_address_ = 0x0000U;

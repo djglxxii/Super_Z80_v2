@@ -15,6 +15,8 @@ constexpr uint16_t kMemoryPageSize = kMemoryRowsPerPage * kMemoryBytesPerRow;
 constexpr uint16_t kSpriteAttributeTableBase = 0x6000U;
 constexpr uint16_t kSpriteAttributeSizeBytes = 4U;
 
+constexpr ImGuiCond kInitialWindowLayoutCondition = ImGuiCond_FirstUseEver;
+
 uint8_t high_byte(uint16_t value) {
     return static_cast<uint8_t>((value >> 8U) & 0x00FFU);
 }
@@ -34,6 +36,10 @@ void render_flag_row(const char* label, bool enabled) {
     ImGui::TextUnformatted(enabled ? "ON" : "OFF");
 }
 
+void render_panel_toggle(const char* label, bool& visible) {
+    ImGui::MenuItem(label, nullptr, &visible);
+}
+
 } // namespace
 
 void DebugPanelHost::initialize() {
@@ -41,6 +47,7 @@ void DebugPanelHost::initialize() {
     runtime_control_state_ = {};
     pending_runtime_control_commands_ = {};
     load_rom_popup_open_ = false;
+    panel_visibility_ = {};
     memory_region_ = MemoryRegion::Rom;
     memory_view_start_address_ = 0x0000U;
     vram_view_start_address_ = 0x0000U;
@@ -53,6 +60,7 @@ void DebugPanelHost::shutdown() {
     runtime_control_state_ = {};
     pending_runtime_control_commands_ = {};
     load_rom_popup_open_ = false;
+    panel_visibility_ = {};
     memory_region_ = MemoryRegion::Rom;
     memory_view_start_address_ = 0x0000U;
     vram_view_start_address_ = 0x0000U;
@@ -78,27 +86,7 @@ void DebugPanelHost::render(const std::string& runtime_name) {
         return;
     }
 
-    if (ImGui::BeginMainMenuBar()) {
-        if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("Load ROM...")) {
-                load_rom_popup_open_ = true;
-            }
-
-            const bool reload_disabled = runtime_control_state_.current_rom_path.empty();
-            if (reload_disabled) {
-                ImGui::BeginDisabled();
-            }
-            if (ImGui::MenuItem("Reload ROM")) {
-                pending_runtime_control_commands_.reload_rom_requested = true;
-            }
-            if (reload_disabled) {
-                ImGui::EndDisabled();
-            }
-
-            ImGui::EndMenu();
-        }
-        ImGui::EndMainMenuBar();
-    }
+    render_menu_bar();
 
     if (load_rom_popup_open_) {
         sync_rom_path_input();
@@ -124,7 +112,134 @@ void DebugPanelHost::render(const std::string& runtime_name) {
         ImGui::EndPopup();
     }
 
-    ImGui::Begin("Emulator Control");
+    render_debug_overview_panel(runtime_name);
+    render_emulator_control_panel(runtime_name);
+    render_cpu_debug_panel();
+    render_memory_viewer();
+    render_vram_viewer();
+    render_sprite_debug_panel();
+    render_dma_debug_panel();
+    render_input_visualization_panel();
+    render_audio_debug_panel();
+    render_frame_timing_scheduler_panel();
+}
+
+void DebugPanelHost::end_frame() {
+}
+
+void DebugPanelHost::render_menu_bar() {
+    if (!ImGui::BeginMainMenuBar()) {
+        return;
+    }
+
+    if (ImGui::BeginMenu("File")) {
+        if (ImGui::MenuItem("Load ROM...")) {
+            load_rom_popup_open_ = true;
+        }
+
+        const bool reload_disabled = runtime_control_state_.current_rom_path.empty();
+        if (reload_disabled) {
+            ImGui::BeginDisabled();
+        }
+        if (ImGui::MenuItem("Reload ROM")) {
+            pending_runtime_control_commands_.reload_rom_requested = true;
+        }
+        if (reload_disabled) {
+            ImGui::EndDisabled();
+        }
+
+        ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("Debug")) {
+        render_panel_toggle("Debug Overview", panel_visibility_.debug_overview);
+        render_panel_toggle("Emulator Control", panel_visibility_.emulator_control);
+        render_panel_toggle("CPU Debug", panel_visibility_.cpu_debug);
+        render_panel_toggle("Memory Viewer", panel_visibility_.memory_viewer);
+        render_panel_toggle("VRAM Viewer", panel_visibility_.vram_viewer);
+        render_panel_toggle("Sprite Debug", panel_visibility_.sprite_debug);
+        render_panel_toggle("DMA Debug", panel_visibility_.dma_debug);
+        render_panel_toggle("Audio Debug", panel_visibility_.audio_debug);
+        render_panel_toggle("Input Visualization", panel_visibility_.input_visualization);
+        render_panel_toggle("Frame Timing & Scheduler", panel_visibility_.frame_timing_scheduler);
+        ImGui::Separator();
+        if (ImGui::MenuItem("Show Core Panels")) {
+            panel_visibility_.debug_overview = true;
+            panel_visibility_.emulator_control = true;
+            panel_visibility_.cpu_debug = true;
+            panel_visibility_.frame_timing_scheduler = true;
+        }
+        if (ImGui::MenuItem("Show All Panels")) {
+            panel_visibility_ = {true, true, true, true, true, true, true, true, true, true};
+        }
+        if (ImGui::MenuItem("Hide Inspectors")) {
+            panel_visibility_.memory_viewer = false;
+            panel_visibility_.vram_viewer = false;
+            panel_visibility_.sprite_debug = false;
+            panel_visibility_.dma_debug = false;
+            panel_visibility_.audio_debug = false;
+            panel_visibility_.input_visualization = false;
+        }
+        ImGui::EndMenu();
+    }
+
+    ImGui::EndMainMenuBar();
+}
+
+void DebugPanelHost::render_debug_overview_panel(const std::string& runtime_name) {
+    if (!panel_visibility_.debug_overview) {
+        return;
+    }
+
+    ImGui::SetNextWindowPos(ImVec2(12.0f, 32.0f), kInitialWindowLayoutCondition);
+    ImGui::SetNextWindowSize(ImVec2(360.0f, 180.0f), kInitialWindowLayoutCondition);
+
+    if (!ImGui::Begin("Debug Overview", &panel_visibility_.debug_overview)) {
+        ImGui::End();
+        return;
+    }
+
+    ImGui::Text("Runtime: %s", runtime_name.c_str());
+    ImGui::Text("Execution: %s", runtime_control_state_.running ? "Running" : "Paused");
+    ImGui::Text("Frame: %u", runtime_control_state_.frame_counter);
+    ImGui::Text("ROM: %s",
+                runtime_control_state_.current_rom_path.empty()
+                    ? "<none>"
+                    : runtime_control_state_.current_rom_path.c_str());
+    ImGui::Text("Snapshot Slot: %s",
+                runtime_control_state_.snapshot_available ? "Available" : "Empty");
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Visible Panels");
+    ImGui::Text("%d active",
+                static_cast<int>(panel_visibility_.debug_overview) +
+                    static_cast<int>(panel_visibility_.emulator_control) +
+                    static_cast<int>(panel_visibility_.cpu_debug) +
+                    static_cast<int>(panel_visibility_.memory_viewer) +
+                    static_cast<int>(panel_visibility_.vram_viewer) +
+                    static_cast<int>(panel_visibility_.sprite_debug) +
+                    static_cast<int>(panel_visibility_.dma_debug) +
+                    static_cast<int>(panel_visibility_.audio_debug) +
+                    static_cast<int>(panel_visibility_.input_visualization) +
+                    static_cast<int>(panel_visibility_.frame_timing_scheduler));
+    ImGui::TextUnformatted("Use the Debug menu to toggle panels and keep the workspace focused.");
+
+    ImGui::End();
+}
+
+void DebugPanelHost::render_emulator_control_panel(const std::string& runtime_name) {
+    if (!panel_visibility_.emulator_control) {
+        return;
+    }
+
+    ImGui::SetNextWindowPos(ImVec2(12.0f, 220.0f), kInitialWindowLayoutCondition);
+    ImGui::SetNextWindowSize(ImVec2(420.0f, 260.0f), kInitialWindowLayoutCondition);
+
+    if (!ImGui::Begin("Emulator Control", &panel_visibility_.emulator_control)) {
+        ImGui::End();
+        return;
+    }
+
     if (ImGui::Button(runtime_control_state_.running ? "Pause" : "Run")) {
         pending_runtime_control_commands_.toggle_run_pause = true;
     }
@@ -187,14 +302,23 @@ void DebugPanelHost::render(const std::string& runtime_name) {
                            runtime_control_state_.snapshot_status_message.c_str());
     }
     ImGui::Text("Runtime: %s", runtime_name.c_str());
-    ImGui::End();
 
-    ImGui::Begin("Super_Z80 Frontend");
-    ImGui::Text("Runtime: %s", runtime_name.c_str());
-    ImGui::TextUnformatted("Control panel, ROM loader, and CPU inspection panel are active.");
     ImGui::End();
+}
 
-    ImGui::Begin("CPU Debug");
+void DebugPanelHost::render_cpu_debug_panel() {
+    if (!panel_visibility_.cpu_debug) {
+        return;
+    }
+
+    ImGui::SetNextWindowPos(ImVec2(444.0f, 32.0f), kInitialWindowLayoutCondition);
+    ImGui::SetNextWindowSize(ImVec2(300.0f, 448.0f), kInitialWindowLayoutCondition);
+
+    if (!ImGui::Begin("CPU Debug", &panel_visibility_.cpu_debug)) {
+        ImGui::End();
+        return;
+    }
+
     if (!runtime_control_state_.cpu_debug_state.available) {
         ImGui::TextUnformatted("CPU state is unavailable.");
     } else {
@@ -251,18 +375,8 @@ void DebugPanelHost::render(const std::string& runtime_name) {
         ImGui::Text("IFF2: %s", cpu.iff2 ? "ON" : "OFF");
         ImGui::Text("IM: %u", static_cast<unsigned int>(cpu.interrupt_mode));
     }
+
     ImGui::End();
-
-    render_memory_viewer();
-    render_vram_viewer();
-    render_sprite_debug_panel();
-    render_dma_debug_panel();
-    render_input_visualization_panel();
-    render_audio_debug_panel();
-    render_frame_timing_scheduler_panel();
-}
-
-void DebugPanelHost::end_frame() {
 }
 
 void DebugPanelHost::sync_rom_path_input() {
@@ -278,7 +392,18 @@ void DebugPanelHost::sync_rom_path_input() {
 }
 
 void DebugPanelHost::render_memory_viewer() {
-    ImGui::Begin("Memory Viewer");
+    if (!panel_visibility_.memory_viewer) {
+        return;
+    }
+
+    ImGui::SetNextWindowPos(ImVec2(756.0f, 32.0f), kInitialWindowLayoutCondition);
+    ImGui::SetNextWindowSize(ImVec2(520.0f, 320.0f), kInitialWindowLayoutCondition);
+
+    if (!ImGui::Begin("Memory Viewer", &panel_visibility_.memory_viewer)) {
+        ImGui::End();
+        return;
+    }
+
     if (!runtime_control_state_.memory_viewer_state.available) {
         ImGui::TextUnformatted("Memory viewer state is unavailable.");
         ImGui::End();
@@ -386,7 +511,18 @@ void DebugPanelHost::clamp_memory_view_start() {
 }
 
 void DebugPanelHost::render_vram_viewer() {
-    ImGui::Begin("VRAM Viewer");
+    if (!panel_visibility_.vram_viewer) {
+        return;
+    }
+
+    ImGui::SetNextWindowPos(ImVec2(756.0f, 364.0f), kInitialWindowLayoutCondition);
+    ImGui::SetNextWindowSize(ImVec2(520.0f, 320.0f), kInitialWindowLayoutCondition);
+
+    if (!ImGui::Begin("VRAM Viewer", &panel_visibility_.vram_viewer)) {
+        ImGui::End();
+        return;
+    }
+
     if (!runtime_control_state_.vram_viewer_state.available) {
         ImGui::TextUnformatted("VRAM viewer state is unavailable.");
         ImGui::End();
@@ -452,7 +588,18 @@ void DebugPanelHost::render_vram_viewer() {
 }
 
 void DebugPanelHost::render_sprite_debug_panel() {
-    ImGui::Begin("Sprite Debug");
+    if (!panel_visibility_.sprite_debug) {
+        return;
+    }
+
+    ImGui::SetNextWindowPos(ImVec2(12.0f, 492.0f), kInitialWindowLayoutCondition);
+    ImGui::SetNextWindowSize(ImVec2(420.0f, 280.0f), kInitialWindowLayoutCondition);
+
+    if (!ImGui::Begin("Sprite Debug", &panel_visibility_.sprite_debug)) {
+        ImGui::End();
+        return;
+    }
+
     if (!runtime_control_state_.sprite_debug_state.available) {
         ImGui::TextUnformatted("Sprite debug state is unavailable.");
         ImGui::End();
@@ -501,7 +648,18 @@ void DebugPanelHost::render_sprite_debug_panel() {
 }
 
 void DebugPanelHost::render_dma_debug_panel() {
-    ImGui::Begin("DMA Debug");
+    if (!panel_visibility_.dma_debug) {
+        return;
+    }
+
+    ImGui::SetNextWindowPos(ImVec2(444.0f, 492.0f), kInitialWindowLayoutCondition);
+    ImGui::SetNextWindowSize(ImVec2(300.0f, 180.0f), kInitialWindowLayoutCondition);
+
+    if (!ImGui::Begin("DMA Debug", &panel_visibility_.dma_debug)) {
+        ImGui::End();
+        return;
+    }
+
     if (!runtime_control_state_.dma_debug_state.available) {
         ImGui::TextUnformatted("DMA debug state is unavailable.");
         ImGui::End();
@@ -521,7 +679,18 @@ void DebugPanelHost::render_dma_debug_panel() {
 }
 
 void DebugPanelHost::render_audio_debug_panel() {
-    ImGui::Begin("Audio Debug");
+    if (!panel_visibility_.audio_debug) {
+        return;
+    }
+
+    ImGui::SetNextWindowPos(ImVec2(12.0f, 32.0f), kInitialWindowLayoutCondition);
+    ImGui::SetNextWindowSize(ImVec2(560.0f, 420.0f), kInitialWindowLayoutCondition);
+
+    if (!ImGui::Begin("Audio Debug", &panel_visibility_.audio_debug)) {
+        ImGui::End();
+        return;
+    }
+
     if (!runtime_control_state_.audio_debug_state.available) {
         ImGui::TextUnformatted("Audio debug state is unavailable.");
         ImGui::End();
@@ -664,7 +833,18 @@ void DebugPanelHost::render_audio_debug_panel() {
 }
 
 void DebugPanelHost::render_input_visualization_panel() {
-    ImGui::Begin("Input Visualization");
+    if (!panel_visibility_.input_visualization) {
+        return;
+    }
+
+    ImGui::SetNextWindowPos(ImVec2(444.0f, 684.0f), kInitialWindowLayoutCondition);
+    ImGui::SetNextWindowSize(ImVec2(300.0f, 180.0f), kInitialWindowLayoutCondition);
+
+    if (!ImGui::Begin("Input Visualization", &panel_visibility_.input_visualization)) {
+        ImGui::End();
+        return;
+    }
+
     if (!runtime_control_state_.input_visualization_state.available) {
         ImGui::TextUnformatted("Input visualization state is unavailable.");
         ImGui::End();
@@ -696,7 +876,18 @@ void DebugPanelHost::render_input_visualization_panel() {
 }
 
 void DebugPanelHost::render_frame_timing_scheduler_panel() {
-    ImGui::Begin("Frame Timing & Scheduler");
+    if (!panel_visibility_.frame_timing_scheduler) {
+        return;
+    }
+
+    ImGui::SetNextWindowPos(ImVec2(756.0f, 32.0f), kInitialWindowLayoutCondition);
+    ImGui::SetNextWindowSize(ImVec2(360.0f, 220.0f), kInitialWindowLayoutCondition);
+
+    if (!ImGui::Begin("Frame Timing & Scheduler", &panel_visibility_.frame_timing_scheduler)) {
+        ImGui::End();
+        return;
+    }
+
     if (!runtime_control_state_.frame_timing_state.available) {
         ImGui::TextUnformatted("Frame timing state is unavailable.");
         ImGui::End();

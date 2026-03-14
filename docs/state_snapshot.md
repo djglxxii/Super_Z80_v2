@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M56
+M57
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,14 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M57 complete.
+- The frontend now presents an integrated ImGui debug overlay with a top-level `Debug` menu that controls visibility for `Emulator Control`, `CPU Debug`, `Memory Viewer`, `VRAM Viewer`, `Sprite Debug`, `DMA Debug`, `Audio Debug`, `Input Visualization`, and `Frame Timing & Scheduler`.
+- Added frontend-owned explicit panel visibility state plus a new `Debug Overview` workspace window so existing developer tools can be shown selectively without changing emulator execution, scheduler timing, or subsystem ownership.
+- Existing debug windows now use stable first-use placement and sizing hints, and the frontend writes ImGui layout state to `super_z80_frontend_layout.ini` so panel layout and visibility persist across SDL runs without adding a custom persistence system.
+- Headless ROM execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xC5117D35`.
+- CI-safe SDL smoke checks still succeed under dummy/software drivers for both `--sdl-input --rom rom/showcase/build/showcase.bin` and `--sdl-audio --rom rom/showcase/build/showcase.bin`, confirming the integrated overlay startup path without changing headless execution behavior.
+- Automated verification confirms frontend startup and persistence-path creation, but visual confirmation of menu-driven panel toggling and final arrangement still requires manual inspection in a real SDL session.
+- The next official frontend milestone is now `M58 - Frontend Stabilization`.
 - M56 complete.
 - The frontend control panel now exposes single-slot `Save Snapshot` and `Restore Snapshot` actions for the SDL input and SDL audio shells, with visible status messaging and graceful failure when no snapshot has been captured yet.
 - Added a core-owned aggregate emulator snapshot/restore path that captures CPU, bus-owned subsystems, scheduler/mixer state, and buffered audio queue state in memory without introducing file I/O, host-timing dependencies, or UI coupling into deterministic emulator subsystems.

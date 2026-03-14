@@ -27,11 +27,15 @@ bool Frontend::initialize(const FrontendConfig& config) {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGui::StyleColorsDark();
+        ImGuiIO& io = ImGui::GetIO();
+        imgui_ini_path_ = "super_z80_frontend_layout.ini";
+        io.IniFilename = imgui_ini_path_.c_str();
         renderer_ = config.renderer;
 
         if (!ImGui_ImplSDL2_InitForSDLRenderer(config.window, config.renderer)) {
             ImGui::DestroyContext();
             renderer_ = nullptr;
+            imgui_ini_path_.clear();
             debug_panel_host_.shutdown();
             runtime_name_.clear();
             return false;
@@ -41,6 +45,7 @@ bool Frontend::initialize(const FrontendConfig& config) {
             ImGui_ImplSDL2_Shutdown();
             ImGui::DestroyContext();
             renderer_ = nullptr;
+            imgui_ini_path_.clear();
             debug_panel_host_.shutdown();
             runtime_name_.clear();
             return false;
@@ -70,6 +75,7 @@ void Frontend::shutdown() {
 #endif
 
     debug_panel_host_.shutdown();
+    imgui_ini_path_.clear();
     runtime_name_.clear();
     initialized_ = false;
 }

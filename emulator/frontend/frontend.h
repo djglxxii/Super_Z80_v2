@@ -40,6 +40,7 @@ private:
     bool initialized_;
     bool ui_initialized_;
     std::string runtime_name_;
+    std::string imgui_ini_path_;
 #if defined(SUPER_Z80_HAS_SDL)
     SDL_Renderer* renderer_ = nullptr;
 #endif
