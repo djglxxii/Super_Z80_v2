@@ -90,6 +90,19 @@ EmulatorCore::AudioSnapshot EmulatorCore::audio_snapshot() const {
     };
 }
 
+EmulatorCore::TimingSnapshot EmulatorCore::timing_snapshot() const {
+    return {
+        scheduler_.frame(),
+        scheduler_.scanline(),
+        superz80::Scheduler::kScanlinesPerFrame,
+        superz80::Scheduler::kInstructionsPerScanline,
+        superz80::Scheduler::kYm2151CyclesPerScanline,
+        bus_.vblank().active(),
+        bus_.vdp().frame_ready(),
+        available_audio_samples(),
+    };
+}
+
 EmulatorCore::RomSnapshot EmulatorCore::rom_snapshot() const {
     RomSnapshot snapshot = {};
     for (std::size_t offset = 0U; offset < snapshot.size(); ++offset) {

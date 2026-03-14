@@ -33,6 +33,16 @@ public:
         ApuSnapshot apu = {};
         Ym2151Snapshot ym2151 = {};
     };
+    struct TimingSnapshot {
+        uint32_t frame_counter = 0U;
+        uint32_t scanline_counter = 0U;
+        uint32_t scanlines_per_frame = 0U;
+        uint32_t instructions_per_scanline = 0U;
+        uint32_t ym2151_cycles_per_scanline = 0U;
+        bool vblank_active = false;
+        bool frame_ready = false;
+        std::size_t buffered_audio_samples = 0U;
+    };
 
     static constexpr uint32_t kAudioMasterClockHz = 3579545U;
     static constexpr uint32_t kVideoFramesPerSecond = 60U;
@@ -54,6 +64,7 @@ public:
     DmaSnapshot dma_snapshot() const;
     InputSnapshot input_snapshot() const;
     AudioSnapshot audio_snapshot() const;
+    TimingSnapshot timing_snapshot() const;
     RomSnapshot rom_snapshot() const;
     RamSnapshot ram_snapshot() const;
     VramSnapshot vram_snapshot() const;

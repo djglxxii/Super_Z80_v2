@@ -282,6 +282,7 @@ void populate_frontend_runtime_state(superz80::frontend::Frontend& frontend,
     const EmulatorCore::DmaSnapshot dma_snapshot = core.dma_snapshot();
     const EmulatorCore::InputSnapshot input_snapshot = core.input_snapshot();
     const EmulatorCore::AudioSnapshot audio_snapshot = core.audio_snapshot();
+    const EmulatorCore::TimingSnapshot timing_snapshot = core.timing_snapshot();
     const EmulatorCore::RomSnapshot rom_snapshot = core.rom_snapshot();
     const EmulatorCore::RamSnapshot ram_snapshot = core.ram_snapshot();
     const EmulatorCore::VramSnapshot vram_snapshot = core.vram_snapshot();
@@ -388,6 +389,17 @@ void populate_frontend_runtime_state(superz80::frontend::Frontend& frontend,
                 audio_snapshot.ym2151.tick_call_count,
                 audio_snapshot.ym2151.accumulated_cycles,
             },
+        },
+        {
+            true,
+            timing_snapshot.frame_counter,
+            timing_snapshot.scanline_counter,
+            timing_snapshot.scanlines_per_frame,
+            timing_snapshot.instructions_per_scanline,
+            timing_snapshot.ym2151_cycles_per_scanline,
+            timing_snapshot.vblank_active,
+            timing_snapshot.frame_ready,
+            timing_snapshot.buffered_audio_samples,
         },
     };
 

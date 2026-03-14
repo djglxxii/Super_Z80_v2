@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M54
+M55
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,13 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M55 complete.
+- The frontend now exposes a read-only `Frame Timing & Scheduler` ImGui panel that refreshes every rendered frame and displays live frame and scanline counters, scheduler timing constants, VBlank state, frame-ready state, and buffered audio sample count for developer inspection.
+- Added a narrow read-only timing snapshot accessor on `EmulatorCore` so the frontend can inspect scheduler-owned timing and related runtime counters without holding mutable subsystem references or altering deterministic execution flow.
+- Core unit coverage now verifies timing snapshots across reset, scanline advance, frame-ready, VBlank, frame wrap, and buffered audio sample progression.
+- Headless ROM execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xC5117D35`.
+- CI-safe SDL smoke checks still succeed under dummy/software drivers for both `--sdl-input --rom rom/showcase/build/showcase.bin` and `--sdl-audio --rom rom/showcase/build/showcase.bin`, confirming the frame timing panel startup path without changing headless execution behavior.
+- The next official frontend milestone is now `M56 - Emulator Snapshot Tools`.
 - M54 complete.
 - The frontend now exposes a read-only `Input Visualization` ImGui panel that refreshes every rendered frame and displays the currently supported controller buttons plus raw active-low `PAD1` and `PAD1_SYS` port-visible values for developer inspection.
 - Added a narrow read-only input snapshot accessor on `IO`, exposed through `Bus` and `EmulatorCore`, so the frontend can inspect live controller state without holding mutable input references or altering deterministic execution flow.

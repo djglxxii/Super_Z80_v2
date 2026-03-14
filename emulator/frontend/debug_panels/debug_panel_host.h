@@ -2,6 +2,7 @@
 #define SUPER_Z80_FRONTEND_DEBUG_PANEL_HOST_H
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 
@@ -134,6 +135,18 @@ struct AudioDebugState {
     AudioDebugYmState ym2151 = {};
 };
 
+struct FrameTimingState {
+    bool available = false;
+    uint32_t frame_counter = 0U;
+    uint32_t scanline_counter = 0U;
+    uint32_t scanlines_per_frame = 0U;
+    uint32_t instructions_per_scanline = 0U;
+    uint32_t ym2151_cycles_per_scanline = 0U;
+    bool vblank_active = false;
+    bool frame_ready = false;
+    std::size_t buffered_audio_samples = 0U;
+};
+
 struct RuntimeControlState {
     bool running = true;
     unsigned int frame_counter = 0U;
@@ -148,6 +161,7 @@ struct RuntimeControlState {
     DmaDebugState dma_debug_state = {};
     InputVisualizationState input_visualization_state = {};
     AudioDebugState audio_debug_state = {};
+    FrameTimingState frame_timing_state = {};
 };
 
 struct RuntimeControlCommands {
@@ -182,6 +196,7 @@ private:
     void render_dma_debug_panel();
     void render_input_visualization_panel();
     void render_audio_debug_panel();
+    void render_frame_timing_scheduler_panel();
     void clamp_memory_view_start();
     void clamp_vram_view_start();
 

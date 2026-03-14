@@ -60,6 +60,7 @@ int main() {
 
     const EmulatorCore::DmaSnapshot dma_idle_snapshot = core.dma_snapshot();
     const EmulatorCore::InputSnapshot input_snapshot = core.input_snapshot();
+    const EmulatorCore::TimingSnapshot timing_reset_snapshot = core.timing_snapshot();
     core.bus().write_port(superz80::Bus::kDmaControlPort, superz80::DMA::kControlStartBit);
     const EmulatorCore::DmaSnapshot dma_active_snapshot = core.dma_snapshot();
     core.bus().write_port(superz80::Bus::kAudioToneALowPort, 0x34U);
@@ -73,6 +74,13 @@ int main() {
     core.bus().write_port(superz80::Bus::kYm2151RegisterDataPort, 0x30U);
     core.step_scanline();
     const EmulatorCore::AudioSnapshot audio_snapshot = core.audio_snapshot();
+    const EmulatorCore::TimingSnapshot timing_after_one_scanline_snapshot = core.timing_snapshot();
+    core.step_scanlines(190U);
+    const EmulatorCore::TimingSnapshot timing_frame_ready_snapshot = core.timing_snapshot();
+    core.step_scanlines(1U);
+    const EmulatorCore::TimingSnapshot timing_vblank_snapshot = core.timing_snapshot();
+    core.step_scanlines(superz80::Scheduler::kScanlinesPerFrame - 192U);
+    const EmulatorCore::TimingSnapshot timing_frame_wrap_snapshot = core.timing_snapshot();
     const EmulatorCore::RomSnapshot rom_snapshot = core.rom_snapshot();
     const EmulatorCore::RamSnapshot ram_snapshot = core.ram_snapshot();
     const EmulatorCore::VramSnapshot vram_snapshot = core.vram_snapshot();
@@ -118,6 +126,54 @@ int main() {
                          0x01U) && ok;
     ok = expect_equal_u8("input-snapshot-pad1", input_snapshot.pad1, 0xEEU) && ok;
     ok = expect_equal_u8("input-snapshot-pad1-sys", input_snapshot.pad1_sys, 0xFEU) && ok;
+    ok = expect_equal_u8("timing-reset-frame",
+                         static_cast<uint8_t>(timing_reset_snapshot.frame_counter),
+                         0x00U) && ok;
+    ok = expect_equal_u8("timing-reset-scanline",
+                         static_cast<uint8_t>(timing_reset_snapshot.scanline_counter),
+                         0x00U) && ok;
+    ok = expect_equal_u8("timing-reset-vblank",
+                         static_cast<uint8_t>(timing_reset_snapshot.vblank_active ? 1U : 0U),
+                         0x00U) && ok;
+    ok = expect_equal_u8("timing-reset-frame-ready",
+                         static_cast<uint8_t>(timing_reset_snapshot.frame_ready ? 1U : 0U),
+                         0x00U) && ok;
+    ok = expect_equal_u8("timing-one-scanline-frame",
+                         static_cast<uint8_t>(timing_after_one_scanline_snapshot.frame_counter),
+                         0x00U) && ok;
+    ok = expect_equal_u8("timing-one-scanline-scanline",
+                         static_cast<uint8_t>(timing_after_one_scanline_snapshot.scanline_counter),
+                         0x01U) && ok;
+    ok = expect_equal_u8("timing-scanlines-per-frame",
+                         static_cast<uint8_t>(timing_after_one_scanline_snapshot.scanlines_per_frame),
+                         static_cast<uint8_t>(superz80::Scheduler::kScanlinesPerFrame)) && ok;
+    ok = expect_equal_u8("timing-instructions-per-scanline",
+                         static_cast<uint8_t>(timing_after_one_scanline_snapshot.instructions_per_scanline),
+                         static_cast<uint8_t>(superz80::Scheduler::kInstructionsPerScanline)) && ok;
+    ok = expect_equal_u8("timing-ym-cycles-per-scanline",
+                         static_cast<uint8_t>(timing_after_one_scanline_snapshot.ym2151_cycles_per_scanline),
+                         static_cast<uint8_t>(superz80::Scheduler::kYm2151CyclesPerScanline)) && ok;
+    ok = expect_equal_u8("timing-buffered-audio-samples",
+                         static_cast<uint8_t>(timing_after_one_scanline_snapshot.buffered_audio_samples),
+                         0x03U) && ok;
+    ok = expect_equal_u8("timing-frame-ready-scanline",
+                         static_cast<uint8_t>(timing_frame_ready_snapshot.scanline_counter),
+                         0xBFU) && ok;
+    ok = expect_equal_u8("timing-frame-ready-flag",
+                         static_cast<uint8_t>(timing_frame_ready_snapshot.frame_ready ? 1U : 0U),
+                         0x01U) && ok;
+    ok = expect_equal_u8("timing-vblank-scanline",
+                         static_cast<uint8_t>(timing_vblank_snapshot.scanline_counter),
+                         0xC0U) && ok;
+    ok = expect_equal_u8("timing-vblank-flag",
+                         static_cast<uint8_t>(timing_vblank_snapshot.vblank_active ? 1U : 0U),
+                         0x01U) && ok;
+    ok = expect_equal_u8("timing-frame-wrap-frame",
+                         static_cast<uint8_t>(timing_frame_wrap_snapshot.frame_counter),
+                         0x01U) && ok;
+    ok = expect_equal_u8("timing-frame-wrap-scanline",
+                         static_cast<uint8_t>(timing_frame_wrap_snapshot.scanline_counter),
+                         0x00U) && ok;
     ok = expect_equal_u8("audio-snapshot-psg-tone-a-low",
                          audio_snapshot.apu.registers[0U],
                          0x34U) && ok;

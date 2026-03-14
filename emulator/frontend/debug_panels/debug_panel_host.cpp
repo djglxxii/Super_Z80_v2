@@ -234,6 +234,7 @@ void DebugPanelHost::render(const std::string& runtime_name) {
     render_dma_debug_panel();
     render_input_visualization_panel();
     render_audio_debug_panel();
+    render_frame_timing_scheduler_panel();
 }
 
 void DebugPanelHost::end_frame() {
@@ -666,6 +667,34 @@ void DebugPanelHost::render_input_visualization_panel() {
     ImGui::Text("PAD1:     0x%02X", input.pad1);
     ImGui::Text("PAD1_SYS: 0x%02X", input.pad1_sys);
     ImGui::TextUnformatted("Active-low input bits clear to 0 when pressed.");
+    ImGui::End();
+}
+
+void DebugPanelHost::render_frame_timing_scheduler_panel() {
+    ImGui::Begin("Frame Timing & Scheduler");
+    if (!runtime_control_state_.frame_timing_state.available) {
+        ImGui::TextUnformatted("Frame timing state is unavailable.");
+        ImGui::End();
+        return;
+    }
+
+    const FrameTimingState& timing = runtime_control_state_.frame_timing_state;
+
+    ImGui::Text("Frame Counter:            %u",
+                static_cast<unsigned int>(timing.frame_counter));
+    ImGui::Text("Scanline Counter:         %u",
+                static_cast<unsigned int>(timing.scanline_counter));
+    ImGui::Text("Scanlines/Frame:          %u",
+                static_cast<unsigned int>(timing.scanlines_per_frame));
+    ImGui::Text("Instructions/Scanline:    %u",
+                static_cast<unsigned int>(timing.instructions_per_scanline));
+    ImGui::Text("YM2151 Cycles/Scanline:   %u",
+                static_cast<unsigned int>(timing.ym2151_cycles_per_scanline));
+    ImGui::Separator();
+    ImGui::Text("VBlank:                   %s", timing.vblank_active ? "ON" : "OFF");
+    ImGui::Text("Frame Ready:              %s", timing.frame_ready ? "ON" : "OFF");
+    ImGui::Text("Buffered Audio Samples:   %u",
+                static_cast<unsigned int>(timing.buffered_audio_samples));
     ImGui::End();
 }
 
