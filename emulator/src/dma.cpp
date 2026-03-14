@@ -96,4 +96,11 @@ DMA::Snapshot DMA::snapshot() const {
     };
 }
 
+void DMA::restore(const Snapshot& snapshot) {
+    src_ = snapshot.source_address;
+    dst_ = snapshot.destination_address;
+    length_ = snapshot.transfer_length;
+    active_ = snapshot.active;
+}
+
 } // namespace superz80

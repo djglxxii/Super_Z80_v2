@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M55
+M56
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,14 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M56 complete.
+- The frontend control panel now exposes single-slot `Save Snapshot` and `Restore Snapshot` actions for the SDL input and SDL audio shells, with visible status messaging and graceful failure when no snapshot has been captured yet.
+- Added a core-owned aggregate emulator snapshot/restore path that captures CPU, bus-owned subsystems, scheduler/mixer state, and buffered audio queue state in memory without introducing file I/O, host-timing dependencies, or UI coupling into deterministic emulator subsystems.
+- Expanded subsystem snapshot coverage to support full round-trip restoration for CPU internal Z80ex state, RAM/ROM, VDP, DMA, IRQ/VBlank, controller input, PSG audio, YM2151 state, scheduler counters, and buffered core audio state.
+- Core unit coverage now verifies deterministic restore behavior by capturing a snapshot, advancing execution, restoring, advancing again, and confirming identical CPU/timing/RAM/audio outcomes plus identical buffered audio sample output.
+- Headless ROM execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xC5117D35`.
+- CI-safe SDL smoke checks still succeed under dummy/software drivers for both `--sdl-input --rom rom/showcase/build/showcase.bin` and `--sdl-audio --rom rom/showcase/build/showcase.bin`, confirming snapshot-enabled frontend startup paths without changing headless execution behavior.
+- The next official frontend milestone is now `M57 - Integrated Debug Overlay`.
 - M55 complete.
 - The frontend now exposes a read-only `Frame Timing & Scheduler` ImGui panel that refreshes every rendered frame and displays live frame and scanline counters, scheduler timing constants, VBlank state, frame-ready state, and buffered audio sample count for developer inspection.
 - Added a narrow read-only timing snapshot accessor on `EmulatorCore` so the frontend can inspect scheduler-owned timing and related runtime counters without holding mutable subsystem references or altering deterministic execution flow.

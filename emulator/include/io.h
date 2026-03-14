@@ -32,6 +32,7 @@ public:
         bool start = false;
         uint8_t pad1 = kPad1IdleValue;
         uint8_t pad1_sys = kPad1SysIdleValue;
+        std::array<uint8_t, 256> ports = {};
     };
 
     IO();
@@ -43,6 +44,7 @@ public:
     void set_button(Button button, bool pressed);
     bool button(Button button) const;
     Snapshot snapshot() const;
+    void restore(const Snapshot& snapshot);
 
 private:
     struct ControllerState {

@@ -152,8 +152,11 @@ struct RuntimeControlState {
     unsigned int frame_counter = 0U;
     bool has_loaded_rom = false;
     bool rom_load_status_ok = false;
+    bool snapshot_available = false;
+    bool snapshot_status_ok = false;
     std::string current_rom_path;
     std::string rom_load_status_message;
+    std::string snapshot_status_message;
     CpuDebugState cpu_debug_state = {};
     MemoryViewerState memory_viewer_state = {};
     VramViewerState vram_viewer_state = {};
@@ -168,6 +171,8 @@ struct RuntimeControlCommands {
     bool toggle_run_pause = false;
     bool reset_requested = false;
     bool step_frame_requested = false;
+    bool save_snapshot_requested = false;
+    bool restore_snapshot_requested = false;
     bool load_rom_requested = false;
     bool reload_rom_requested = false;
     std::string rom_path_to_load;

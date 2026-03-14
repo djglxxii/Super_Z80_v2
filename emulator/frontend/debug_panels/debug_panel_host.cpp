@@ -146,9 +146,26 @@ void DebugPanelHost::render(const std::string& runtime_name) {
         ImGui::EndDisabled();
     }
 
+    ImGui::SameLine();
+    if (ImGui::Button("Save Snapshot")) {
+        pending_runtime_control_commands_.save_snapshot_requested = true;
+    }
+
+    ImGui::SameLine();
+    if (!runtime_control_state_.snapshot_available) {
+        ImGui::BeginDisabled();
+    }
+    if (ImGui::Button("Restore Snapshot")) {
+        pending_runtime_control_commands_.restore_snapshot_requested = true;
+    }
+    if (!runtime_control_state_.snapshot_available) {
+        ImGui::EndDisabled();
+    }
+
     ImGui::Separator();
     ImGui::Text("Execution State: %s", runtime_control_state_.running ? "Running" : "Paused");
     ImGui::Text("Frame Counter: %u", runtime_control_state_.frame_counter);
+    ImGui::Text("Snapshot: %s", runtime_control_state_.snapshot_available ? "Available" : "Empty");
     ImGui::Text("ROM Path: %s",
                 runtime_control_state_.current_rom_path.empty()
                     ? "<none>"
@@ -160,6 +177,14 @@ void DebugPanelHost::render(const std::string& runtime_name) {
         ImGui::TextColored(status_color,
                            "%s",
                            runtime_control_state_.rom_load_status_message.c_str());
+    }
+    if (!runtime_control_state_.snapshot_status_message.empty()) {
+        const ImVec4 status_color = runtime_control_state_.snapshot_status_ok
+                                        ? ImVec4(0.39f, 0.83f, 0.47f, 1.0f)
+                                        : ImVec4(0.93f, 0.33f, 0.30f, 1.0f);
+        ImGui::TextColored(status_color,
+                           "%s",
+                           runtime_control_state_.snapshot_status_message.c_str());
     }
     ImGui::Text("Runtime: %s", runtime_name.c_str());
     ImGui::End();

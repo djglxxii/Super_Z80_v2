@@ -225,6 +225,40 @@ APU::Snapshot APU::snapshot() const {
     return snapshot;
 }
 
+void APU::restore(const Snapshot& snapshot) {
+    registers_.tone[kToneAChannel].period_low = snapshot.registers[0U];
+    registers_.tone[kToneAChannel].period_high =
+        static_cast<uint8_t>(snapshot.registers[1U] & APURegisterState::kToneHighMask);
+    registers_.tone[kToneBChannel].period_low = snapshot.registers[2U];
+    registers_.tone[kToneBChannel].period_high =
+        static_cast<uint8_t>(snapshot.registers[3U] & APURegisterState::kToneHighMask);
+    registers_.tone[kToneCChannel].period_low = snapshot.registers[4U];
+    registers_.tone[kToneCChannel].period_high =
+        static_cast<uint8_t>(snapshot.registers[5U] & APURegisterState::kToneHighMask);
+    registers_.noise_control =
+        static_cast<uint8_t>(snapshot.registers[6U] & APURegisterState::kNoiseControlMask);
+    registers_.volume[kToneAChannel] =
+        static_cast<uint8_t>(snapshot.registers[7U] & APURegisterState::kVolumeMask);
+    registers_.volume[kToneBChannel] =
+        static_cast<uint8_t>(snapshot.registers[8U] & APURegisterState::kVolumeMask);
+    registers_.volume[kToneCChannel] =
+        static_cast<uint8_t>(snapshot.registers[9U] & APURegisterState::kVolumeMask);
+    registers_.volume[kNoiseChannel] =
+        static_cast<uint8_t>(snapshot.registers[10U] & APURegisterState::kVolumeMask);
+    registers_.control =
+        static_cast<uint8_t>(snapshot.registers[11U] & APURegisterState::kControlReadableMask);
+
+    for (std::size_t channel = 0U; channel < snapshot.tone_channels.size(); ++channel) {
+        tone_runtime_[channel].divider_counter = snapshot.tone_channels[channel].divider_counter;
+        tone_runtime_[channel].phase_high = snapshot.tone_channels[channel].phase_high;
+    }
+
+    noise_runtime_.divider_counter = snapshot.noise.divider_counter;
+    noise_runtime_.lfsr = snapshot.noise.lfsr;
+    overrun_ = snapshot.overrun;
+    sample_output_state_.current_sample = snapshot.current_sample;
+}
+
 void APU::reset_runtime_state() {
     overrun_ = false;
     for (std::size_t channel = 0U; channel < APURegisterState::kToneChannelCount; ++channel) {

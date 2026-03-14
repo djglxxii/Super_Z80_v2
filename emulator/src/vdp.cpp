@@ -396,6 +396,56 @@ uint8_t VDP::fg_pattern_bank() const {
     return fg_pattern_bank_;
 }
 
+VDP::Snapshot VDP::snapshot() const {
+    return {
+        vram_,
+        framebuffer_,
+        sprite_mask_,
+        palette_,
+        vram_ptr_,
+        control_address_low_,
+        palette_index_,
+        control_reg_,
+        control_address_latch_low_,
+        bg_scroll_x_,
+        bg_scroll_y_,
+        fg_scroll_x_,
+        fg_scroll_y_,
+        bg_pattern_bank_,
+        fg_pattern_bank_,
+        sprite_scanline_list_,
+        sprite_scanline_count_,
+        sprite_overflow_,
+        sprite_collision_,
+        vblank_active_,
+        frame_ready_,
+    };
+}
+
+void VDP::restore(const Snapshot& snapshot) {
+    vram_ = snapshot.vram;
+    framebuffer_ = snapshot.framebuffer;
+    sprite_mask_ = snapshot.sprite_mask;
+    palette_ = snapshot.palette;
+    vram_ptr_ = snapshot.vram_ptr;
+    control_address_low_ = snapshot.control_address_low;
+    palette_index_ = snapshot.palette_index;
+    control_reg_ = snapshot.control_reg;
+    control_address_latch_low_ = snapshot.control_address_latch_low;
+    bg_scroll_x_ = snapshot.bg_scroll_x;
+    bg_scroll_y_ = snapshot.bg_scroll_y;
+    fg_scroll_x_ = snapshot.fg_scroll_x;
+    fg_scroll_y_ = snapshot.fg_scroll_y;
+    bg_pattern_bank_ = snapshot.bg_pattern_bank;
+    fg_pattern_bank_ = snapshot.fg_pattern_bank;
+    sprite_scanline_list_ = snapshot.sprite_scanline_list;
+    sprite_scanline_count_ = snapshot.sprite_scanline_count;
+    sprite_overflow_ = snapshot.sprite_overflow;
+    sprite_collision_ = snapshot.sprite_collision;
+    vblank_active_ = snapshot.vblank_active;
+    frame_ready_ = snapshot.frame_ready;
+}
+
 uint16_t VDP::pattern_bank_base(uint8_t bank) const {
     return bank == 0x00U ? kPatternBank0Base : kPatternBank1Base;
 }

@@ -1,9 +1,9 @@
 #include "emulator_core.h"
-
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
+#include <vector>
 
 namespace {
 
@@ -20,6 +20,52 @@ bool expect_equal_u8(const char* name, uint8_t actual, uint8_t expected) {
               << static_cast<unsigned int>(actual) << std::dec << std::nouppercase
               << std::endl;
     return true;
+}
+
+bool expect_equal_u16(const char* name, uint16_t actual, uint16_t expected) {
+    if (actual != expected) {
+        std::cerr << "[FAIL] " << name << " expected=0x" << std::hex << std::uppercase
+                  << expected << " actual=0x" << actual << std::dec << std::nouppercase
+                  << std::endl;
+        return false;
+    }
+
+    std::cout << "[PASS] " << name << " value=0x" << std::hex << std::uppercase << actual
+              << std::dec << std::nouppercase << std::endl;
+    return true;
+}
+
+bool expect_equal_u32(const char* name, uint32_t actual, uint32_t expected) {
+    if (actual != expected) {
+        std::cerr << "[FAIL] " << name << " expected=0x" << std::hex << std::uppercase
+                  << expected << " actual=0x" << actual << std::dec << std::nouppercase
+                  << std::endl;
+        return false;
+    }
+
+    std::cout << "[PASS] " << name << " value=0x" << std::hex << std::uppercase << actual
+              << std::dec << std::nouppercase << std::endl;
+    return true;
+}
+
+std::vector<EmulatorCore::AudioSample> collect_audio_samples(EmulatorCore& core) {
+    std::vector<EmulatorCore::AudioSample> samples(core.available_audio_samples(), 0);
+    if (!samples.empty()) {
+        core.consume_audio_samples(samples.data(), samples.size());
+    }
+    return samples;
+}
+
+template <typename T>
+uint32_t checksum_bytes(const T* data, std::size_t count) {
+    const auto* bytes = reinterpret_cast<const uint8_t*>(data);
+    const std::size_t byte_count = sizeof(T) * count;
+    uint32_t checksum = 2166136261U;
+    for (std::size_t index = 0U; index < byte_count; ++index) {
+        checksum ^= static_cast<uint32_t>(bytes[index]);
+        checksum *= 16777619U;
+    }
+    return checksum;
 }
 
 } // namespace
@@ -226,6 +272,101 @@ int main() {
     ok = expect_equal_u8("sprite-snapshot-entry-count",
                          static_cast<uint8_t>(sprite_table_snapshot.size()),
                          static_cast<uint8_t>(superz80::VDP::kMaxSprites)) && ok;
+
+    EmulatorCore restore_core;
+    restore_core.initialize();
+    constexpr std::array<uint8_t, 8> kDeterminismRom = {
+        0x00U, // NOP
+        0x00U, // NOP
+        0x00U, // NOP
+        0xC3U, 0x00U, 0x00U, // JP 0000h
+        0x00U,
+        0x00U,
+    };
+    restore_core.load_rom(kDeterminismRom.data(), kDeterminismRom.size());
+    restore_core.bus().write(0xC000U, 0x5AU);
+    restore_core.bus().write(0xC001U, 0xA5U);
+    restore_core.bus().write_port(superz80::Bus::kDmaSrcLowPort, 0x00U);
+    restore_core.bus().write_port(superz80::Bus::kDmaSrcHighPort, 0xC0U);
+    restore_core.bus().write_port(superz80::Bus::kDmaDstLowPort, 0x10U);
+    restore_core.bus().write_port(superz80::Bus::kDmaDstHighPort, 0xC0U);
+    restore_core.bus().write_port(superz80::Bus::kDmaLengthPort, 0x02U);
+    restore_core.bus().write_port(superz80::Bus::kDmaControlPort, superz80::DMA::kControlStartBit);
+    restore_core.bus().write_port(superz80::Bus::kAudioToneALowPort, 0x40U);
+    restore_core.bus().write_port(superz80::Bus::kAudioToneAHighPort, 0x01U);
+    restore_core.bus().write_port(superz80::Bus::kAudioVolumeAPort, 0x04U);
+    restore_core.bus().write_port(superz80::Bus::kAudioControlPort, 0x01U);
+    restore_core.bus().write_port(superz80::Bus::kYm2151RegisterSelectPort, 0x20U);
+    restore_core.bus().write_port(superz80::Bus::kYm2151RegisterDataPort, 0x15U);
+    restore_core.bus().write_port(superz80::Bus::kYm2151RegisterSelectPort, 0x28U);
+    restore_core.bus().write_port(superz80::Bus::kYm2151RegisterDataPort, 0x10U);
+    restore_core.bus().set_controller_button(superz80::IO::Button::Right, true);
+    restore_core.step_scanlines(8U);
+    const EmulatorCore::Snapshot restore_point = restore_core.capture_snapshot();
+    restore_core.step_scanlines(24U);
+
+    const EmulatorCore::CpuSnapshot cpu_after_restore_run = restore_core.cpu_snapshot();
+    const EmulatorCore::TimingSnapshot timing_after_restore_run = restore_core.timing_snapshot();
+    const EmulatorCore::AudioSnapshot audio_after_restore_run = restore_core.audio_snapshot();
+    const EmulatorCore::InputSnapshot input_after_restore_run = restore_core.input_snapshot();
+    const EmulatorCore::RamSnapshot ram_after_restore_run = restore_core.ram_snapshot();
+    const std::vector<EmulatorCore::AudioSample> samples_after_restore_run =
+        collect_audio_samples(restore_core);
+    const uint32_t ram_crc_after_restore_run =
+        checksum_bytes(ram_after_restore_run.data(), ram_after_restore_run.size());
+    const uint32_t audio_crc_after_restore_run =
+        checksum_bytes(samples_after_restore_run.data(), samples_after_restore_run.size());
+
+    restore_core.restore_snapshot(restore_point);
+    restore_core.step_scanlines(24U);
+
+    const EmulatorCore::CpuSnapshot cpu_after_replay = restore_core.cpu_snapshot();
+    const EmulatorCore::TimingSnapshot timing_after_replay = restore_core.timing_snapshot();
+    const EmulatorCore::AudioSnapshot audio_after_replay = restore_core.audio_snapshot();
+    const EmulatorCore::InputSnapshot input_after_replay = restore_core.input_snapshot();
+    const EmulatorCore::RamSnapshot ram_after_replay = restore_core.ram_snapshot();
+    const std::vector<EmulatorCore::AudioSample> samples_after_replay =
+        collect_audio_samples(restore_core);
+    const uint32_t ram_crc_after_replay =
+        checksum_bytes(ram_after_replay.data(), ram_after_replay.size());
+    const uint32_t audio_crc_after_replay =
+        checksum_bytes(samples_after_replay.data(), samples_after_replay.size());
+
+    ok = expect_equal_u16("snapshot-restore-cpu-pc", cpu_after_replay.pc, cpu_after_restore_run.pc) && ok;
+    ok = expect_equal_u16("snapshot-restore-cpu-af", cpu_after_replay.af, cpu_after_restore_run.af) && ok;
+    ok = expect_equal_u16("snapshot-restore-cpu-bc", cpu_after_replay.bc, cpu_after_restore_run.bc) && ok;
+    ok = expect_equal_u16("snapshot-restore-cpu-de", cpu_after_replay.de, cpu_after_restore_run.de) && ok;
+    ok = expect_equal_u16("snapshot-restore-cpu-hl", cpu_after_replay.hl, cpu_after_restore_run.hl) && ok;
+    ok = expect_equal_u32("snapshot-restore-frame",
+                          timing_after_replay.frame_counter,
+                          timing_after_restore_run.frame_counter) && ok;
+    ok = expect_equal_u32("snapshot-restore-scanline",
+                          timing_after_replay.scanline_counter,
+                          timing_after_restore_run.scanline_counter) && ok;
+    ok = expect_equal_u32("snapshot-restore-buffered-audio",
+                          static_cast<uint32_t>(timing_after_replay.buffered_audio_samples),
+                          static_cast<uint32_t>(timing_after_restore_run.buffered_audio_samples)) && ok;
+    ok = expect_equal_u8("snapshot-restore-vblank",
+                         static_cast<uint8_t>(timing_after_replay.vblank_active ? 1U : 0U),
+                         static_cast<uint8_t>(timing_after_restore_run.vblank_active ? 1U : 0U)) && ok;
+    ok = expect_equal_u8("snapshot-restore-input-right",
+                         static_cast<uint8_t>(input_after_replay.right ? 1U : 0U),
+                         static_cast<uint8_t>(input_after_restore_run.right ? 1U : 0U)) && ok;
+    ok = expect_equal_u8("snapshot-restore-audio-enabled",
+                         static_cast<uint8_t>(audio_after_replay.apu.enabled ? 1U : 0U),
+                         static_cast<uint8_t>(audio_after_restore_run.apu.enabled ? 1U : 0U)) && ok;
+    ok = expect_equal_u16("snapshot-restore-ym-frequency",
+                          audio_after_replay.ym2151.channels[0U].frequency,
+                          audio_after_restore_run.ym2151.channels[0U].frequency) && ok;
+    ok = expect_equal_u32("snapshot-restore-ram-crc",
+                          ram_crc_after_replay,
+                          ram_crc_after_restore_run) && ok;
+    ok = expect_equal_u32("snapshot-restore-audio-crc",
+                          audio_crc_after_replay,
+                          audio_crc_after_restore_run) && ok;
+    ok = expect_equal_u32("snapshot-restore-audio-sample-count",
+                          static_cast<uint32_t>(samples_after_replay.size()),
+                          static_cast<uint32_t>(samples_after_restore_run.size())) && ok;
 
     return ok ? 0 : 1;
 }

@@ -192,7 +192,32 @@ YM2151::Snapshot YM2151::snapshot() const {
             channels_[channel_index].algorithm,
             channels_[channel_index].feedback,
             key_on_mask,
+            {},
         };
+
+        for (std::size_t operator_index = 0U;
+             operator_index < channels_[channel_index].operators.size();
+             ++operator_index) {
+            const YM2151Operator& op = channels_[channel_index].operators[operator_index];
+            snapshot.channels[channel_index].operators[operator_index] = {
+                op.detune,
+                op.multiple,
+                op.total_level,
+                op.attack_rate,
+                op.decay_rate,
+                op.sustain_rate,
+                op.release_rate,
+                op.sustain_level,
+                op.key_scale,
+                op.key_on,
+                op.phase,
+                op.phase_increment,
+                op.phase_counter,
+                op.envelope_level,
+                op.envelope_state,
+                op.last_output,
+            };
+        }
     }
 
     snapshot.timer_a = {
@@ -215,6 +240,56 @@ YM2151::Snapshot YM2151::snapshot() const {
     snapshot.tick_call_count = tick_call_count_;
     snapshot.accumulated_cycles = accumulated_cycles_;
     return snapshot;
+}
+
+void YM2151::restore(const Snapshot& snapshot) {
+    selected_register_ = snapshot.selected_register;
+    registers_ = snapshot.registers;
+
+    for (std::size_t channel_index = 0U; channel_index < channels_.size(); ++channel_index) {
+        YM2151Channel& channel = channels_[channel_index];
+        const ChannelSnapshot& channel_snapshot = snapshot.channels[channel_index];
+        channel.frequency = channel_snapshot.frequency;
+        channel.block = channel_snapshot.block;
+        channel.algorithm = channel_snapshot.algorithm;
+        channel.feedback = channel_snapshot.feedback;
+
+        for (std::size_t operator_index = 0U; operator_index < channel.operators.size(); ++operator_index) {
+            YM2151Operator& op = channel.operators[operator_index];
+            const ChannelSnapshot::OperatorSnapshot& operator_snapshot =
+                channel_snapshot.operators[operator_index];
+            op.detune = operator_snapshot.detune;
+            op.multiple = operator_snapshot.multiple;
+            op.total_level = operator_snapshot.total_level;
+            op.attack_rate = operator_snapshot.attack_rate;
+            op.decay_rate = operator_snapshot.decay_rate;
+            op.sustain_rate = operator_snapshot.sustain_rate;
+            op.release_rate = operator_snapshot.release_rate;
+            op.sustain_level = operator_snapshot.sustain_level;
+            op.key_scale = operator_snapshot.key_scale;
+            op.key_on = operator_snapshot.key_on;
+            op.phase = operator_snapshot.phase;
+            op.phase_increment = operator_snapshot.phase_increment;
+            op.phase_counter = operator_snapshot.phase_counter;
+            op.envelope_level = operator_snapshot.envelope_level;
+            op.envelope_state = operator_snapshot.envelope_state;
+            op.last_output = operator_snapshot.last_output;
+        }
+    }
+
+    timer_a_.latch = snapshot.timer_a.latch;
+    timer_a_.counter = snapshot.timer_a.counter;
+    timer_a_.enabled = snapshot.timer_a.enabled;
+    timer_a_.overflow = snapshot.timer_a.overflow;
+    timer_a_.irq_enabled = snapshot.timer_a.irq_enabled;
+    timer_b_.latch = snapshot.timer_b.latch;
+    timer_b_.counter = snapshot.timer_b.counter;
+    timer_b_.enabled = snapshot.timer_b.enabled;
+    timer_b_.overflow = snapshot.timer_b.overflow;
+    timer_b_.irq_enabled = snapshot.timer_b.irq_enabled;
+    last_sample_ = snapshot.current_sample;
+    tick_call_count_ = snapshot.tick_call_count;
+    accumulated_cycles_ = snapshot.accumulated_cycles;
 }
 
 void YM2151::apply_register_write(uint8_t reg, uint8_t value) {

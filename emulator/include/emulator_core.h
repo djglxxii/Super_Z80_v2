@@ -15,6 +15,7 @@ class EmulatorCore {
 public:
     using AudioSample = superz80::APU::Sample;
     using ApuSnapshot = superz80::APU::Snapshot;
+    using BusSnapshot = superz80::Bus::Snapshot;
     using CpuSnapshot = superz80::CPU::RegisterSnapshot;
     using DmaSnapshot = superz80::DMA::Snapshot;
     using InputSnapshot = superz80::IO::Snapshot;
@@ -49,6 +50,17 @@ public:
     static constexpr uint32_t kScanlinesPerSecond =
         superz80::Scheduler::kScanlinesPerFrame * kVideoFramesPerSecond;
     static constexpr std::size_t kAudioBufferCapacitySamples = 4096U;
+    struct Snapshot {
+        BusSnapshot bus = {};
+        CpuSnapshot cpu = {};
+        superz80::Scheduler::Snapshot scheduler = {};
+        std::array<AudioSample, kAudioBufferCapacitySamples> audio_buffer = {};
+        std::size_t audio_read_index = 0U;
+        std::size_t audio_write_index = 0U;
+        std::size_t audio_buffer_size = 0U;
+        uint32_t scanline_sample_remainder = 0U;
+        uint32_t sample_tick_remainder = 0U;
+    };
 
     EmulatorCore();
 
@@ -65,6 +77,8 @@ public:
     InputSnapshot input_snapshot() const;
     AudioSnapshot audio_snapshot() const;
     TimingSnapshot timing_snapshot() const;
+    Snapshot capture_snapshot() const;
+    void restore_snapshot(const Snapshot& snapshot);
     RomSnapshot rom_snapshot() const;
     RamSnapshot ram_snapshot() const;
     VramSnapshot vram_snapshot() const;

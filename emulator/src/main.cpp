@@ -9,6 +9,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <optional>
 
 #include "crc32.h"
 
@@ -222,8 +223,11 @@ constexpr std::size_t kSdlOutputChunkSamples = 512U;
 struct RuntimeLoopState {
     bool emulation_running = true;
     bool rom_load_status_ok = false;
+    bool snapshot_available = false;
+    bool snapshot_status_ok = false;
     std::string current_rom_path;
     std::string rom_load_status_message;
+    std::string snapshot_status_message;
 };
 
 RomLoadResult load_runtime_rom(EmulatorCore& core, const std::string& rom_path) {
@@ -292,8 +296,11 @@ void populate_frontend_runtime_state(superz80::frontend::Frontend& frontend,
         static_cast<unsigned int>(core.frame()),
         !loop_state.current_rom_path.empty(),
         loop_state.rom_load_status_ok,
+        loop_state.snapshot_available,
+        loop_state.snapshot_status_ok,
         loop_state.current_rom_path,
         loop_state.rom_load_status_message,
+        loop_state.snapshot_status_message,
         {
             true,
             cpu_snapshot.af,
@@ -434,12 +441,14 @@ void populate_frontend_runtime_state(superz80::frontend::Frontend& frontend,
     frontend.set_runtime_control_state(runtime_state);
 }
 
-template <typename ResetFn, typename LoadRomFn>
+template <typename ResetFn, typename LoadRomFn, typename SaveSnapshotFn, typename RestoreSnapshotFn>
 void apply_runtime_control_commands(superz80::frontend::Frontend& frontend,
                                     RuntimeLoopState& loop_state,
                                     EmulatorCore& core,
                                     ResetFn&& reset_runtime,
-                                    LoadRomFn&& load_rom) {
+                                    LoadRomFn&& load_rom,
+                                    SaveSnapshotFn&& save_snapshot,
+                                    RestoreSnapshotFn&& restore_snapshot) {
     const superz80::frontend::RuntimeControlCommands commands =
         frontend.consume_runtime_control_commands();
 
@@ -463,6 +472,14 @@ void apply_runtime_control_commands(superz80::frontend::Frontend& frontend,
         } else {
             load_rom(loop_state.current_rom_path);
         }
+    }
+
+    if (commands.save_snapshot_requested) {
+        save_snapshot();
+    }
+
+    if (commands.restore_snapshot_requested) {
+        restore_snapshot();
     }
 
     if (commands.step_frame_requested && !loop_state.emulation_running) {
@@ -615,8 +632,10 @@ int run_sdl_audio_shell(EmulatorCore& core, const std::string& startup_rom_path)
     }
 
     RuntimeLoopState loop_state = {};
-    const auto reset_runtime = [&core, &audio_output, &loop_state]() {
+    std::optional<EmulatorCore::Snapshot> runtime_snapshot;
+    const auto reset_runtime = [&core, &audio_output, &loop_state, &runtime_snapshot]() {
         audio_output.clear();
+        runtime_snapshot.reset();
         if (!loop_state.current_rom_path.empty()) {
             const RomLoadResult result = load_runtime_rom(core, loop_state.current_rom_path);
             loop_state.rom_load_status_ok = result.ok;
@@ -632,10 +651,14 @@ int run_sdl_audio_shell(EmulatorCore& core, const std::string& startup_rom_path)
             loop_state.rom_load_status_ok = true;
             loop_state.rom_load_status_message = "Reset runtime to demo audio startup.";
         }
+        loop_state.snapshot_available = false;
+        loop_state.snapshot_status_ok = true;
+        loop_state.snapshot_status_message = "Snapshot cleared after reset.";
         pump_audio_output(core, audio_output);
     };
-    const auto load_rom_into_runtime = [&core, &audio_output, &loop_state](const std::string& rom_path) {
+    const auto load_rom_into_runtime = [&core, &audio_output, &loop_state, &runtime_snapshot](const std::string& rom_path) {
         audio_output.clear();
+        runtime_snapshot.reset();
         const RomLoadResult result = load_runtime_rom(core, rom_path);
         loop_state.rom_load_status_ok = result.ok;
         loop_state.rom_load_status_message = result.message;
@@ -646,8 +669,34 @@ int run_sdl_audio_shell(EmulatorCore& core, const std::string& startup_rom_path)
 
         loop_state.current_rom_path = rom_path;
         loop_state.emulation_running = true;
+        loop_state.snapshot_available = false;
+        loop_state.snapshot_status_ok = true;
+        loop_state.snapshot_status_message = "Snapshot cleared after ROM load.";
         std::cout << result.message << std::endl;
         pump_audio_output(core, audio_output);
+    };
+    const auto save_snapshot = [&core, &audio_output, &loop_state, &runtime_snapshot]() {
+        runtime_snapshot = core.capture_snapshot();
+        audio_output.clear();
+        pump_audio_output(core, audio_output);
+        loop_state.snapshot_available = true;
+        loop_state.snapshot_status_ok = true;
+        loop_state.snapshot_status_message = "Saved in-memory snapshot.";
+    };
+    const auto restore_snapshot = [&core, &audio_output, &loop_state, &runtime_snapshot]() {
+        if (!runtime_snapshot.has_value()) {
+            loop_state.snapshot_available = false;
+            loop_state.snapshot_status_ok = false;
+            loop_state.snapshot_status_message = "Restore failed: no snapshot saved.";
+            return;
+        }
+
+        core.restore_snapshot(*runtime_snapshot);
+        audio_output.clear();
+        pump_audio_output(core, audio_output);
+        loop_state.snapshot_available = true;
+        loop_state.snapshot_status_ok = true;
+        loop_state.snapshot_status_message = "Restored in-memory snapshot.";
     };
 
     if (!startup_rom_path.empty()) {
@@ -699,7 +748,9 @@ int run_sdl_audio_shell(EmulatorCore& core, const std::string& startup_rom_path)
             loop_state,
             core,
             reset_runtime,
-            load_rom_into_runtime);
+            load_rom_into_runtime,
+            save_snapshot,
+            restore_snapshot);
 
         if (loop_state.emulation_running) {
             step_one_emulator_frame(core);
@@ -770,7 +821,9 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
     print_controller_state(core.bus());
 
     RuntimeLoopState loop_state = {};
-    const auto reset_runtime = [&core, &loop_state]() {
+    std::optional<EmulatorCore::Snapshot> runtime_snapshot;
+    const auto reset_runtime = [&core, &loop_state, &runtime_snapshot]() {
+        runtime_snapshot.reset();
         if (!loop_state.current_rom_path.empty()) {
             const RomLoadResult result = load_runtime_rom(core, loop_state.current_rom_path);
             loop_state.rom_load_status_ok = result.ok;
@@ -785,8 +838,12 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
             loop_state.rom_load_status_ok = true;
             loop_state.rom_load_status_message = "Reset runtime with no ROM loaded.";
         }
+        loop_state.snapshot_available = false;
+        loop_state.snapshot_status_ok = true;
+        loop_state.snapshot_status_message = "Snapshot cleared after reset.";
     };
-    const auto load_rom_into_runtime = [&core, &loop_state](const std::string& rom_path) {
+    const auto load_rom_into_runtime = [&core, &loop_state, &runtime_snapshot](const std::string& rom_path) {
+        runtime_snapshot.reset();
         const RomLoadResult result = load_runtime_rom(core, rom_path);
         loop_state.rom_load_status_ok = result.ok;
         loop_state.rom_load_status_message = result.message;
@@ -797,7 +854,29 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
 
         loop_state.current_rom_path = rom_path;
         loop_state.emulation_running = true;
+        loop_state.snapshot_available = false;
+        loop_state.snapshot_status_ok = true;
+        loop_state.snapshot_status_message = "Snapshot cleared after ROM load.";
         std::cout << result.message << std::endl;
+    };
+    const auto save_snapshot = [&core, &loop_state, &runtime_snapshot]() {
+        runtime_snapshot = core.capture_snapshot();
+        loop_state.snapshot_available = true;
+        loop_state.snapshot_status_ok = true;
+        loop_state.snapshot_status_message = "Saved in-memory snapshot.";
+    };
+    const auto restore_snapshot = [&core, &loop_state, &runtime_snapshot]() {
+        if (!runtime_snapshot.has_value()) {
+            loop_state.snapshot_available = false;
+            loop_state.snapshot_status_ok = false;
+            loop_state.snapshot_status_message = "Restore failed: no snapshot saved.";
+            return;
+        }
+
+        core.restore_snapshot(*runtime_snapshot);
+        loop_state.snapshot_available = true;
+        loop_state.snapshot_status_ok = true;
+        loop_state.snapshot_status_message = "Restored in-memory snapshot.";
     };
 
     if (!startup_rom_path.empty()) {
@@ -873,7 +952,9 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
             loop_state,
             core,
             reset_runtime,
-            load_rom_into_runtime);
+            load_rom_into_runtime,
+            save_snapshot,
+            restore_snapshot);
 
         if (loop_state.emulation_running) {
             step_one_emulator_frame(core);

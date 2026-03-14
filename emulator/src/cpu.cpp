@@ -2,6 +2,7 @@
 
 extern "C" {
 #include "z80ex.h"
+#include "../vendor/z80ex/typedefs.h"
 }
 
 #include <cstdint>
@@ -95,19 +96,64 @@ CPU::RegisterSnapshot CPU::snapshot() const {
     snapshot.bc = z80ex_get_reg(as_context(cpu_), regBC);
     snapshot.de = z80ex_get_reg(as_context(cpu_), regDE);
     snapshot.hl = z80ex_get_reg(as_context(cpu_), regHL);
+    snapshot.af_shadow = z80ex_get_reg(as_context(cpu_), regAF_);
+    snapshot.bc_shadow = z80ex_get_reg(as_context(cpu_), regBC_);
+    snapshot.de_shadow = z80ex_get_reg(as_context(cpu_), regDE_);
+    snapshot.hl_shadow = z80ex_get_reg(as_context(cpu_), regHL_);
     snapshot.ix = z80ex_get_reg(as_context(cpu_), regIX);
     snapshot.iy = z80ex_get_reg(as_context(cpu_), regIY);
     snapshot.pc = z80ex_get_reg(as_context(cpu_), regPC);
     snapshot.sp = z80ex_get_reg(as_context(cpu_), regSP);
+    snapshot.memptr = as_context(cpu_)->memptr.w;
     snapshot.i = static_cast<uint8_t>(z80ex_get_reg(as_context(cpu_), regI) & 0x00FFU);
     snapshot.r = static_cast<uint8_t>(z80ex_get_reg(as_context(cpu_), regR) & 0x00FFU);
+    snapshot.r7 = static_cast<uint8_t>(z80ex_get_reg(as_context(cpu_), regR7) & 0x00FFU);
     snapshot.interrupt_mode =
         static_cast<uint8_t>(z80ex_get_reg(as_context(cpu_), regIM) & 0x00FFU);
     snapshot.iff1 = z80ex_get_reg(as_context(cpu_), regIFF1) != 0U;
     snapshot.iff2 = z80ex_get_reg(as_context(cpu_), regIFF2) != 0U;
     snapshot.halted = is_halted();
     snapshot.int_line = int_line_;
+    snapshot.noint_once = as_context(cpu_)->noint_once != 0;
+    snapshot.reset_pv_on_int = as_context(cpu_)->reset_PV_on_int != 0;
+    snapshot.doing_opcode = as_context(cpu_)->doing_opcode != 0;
+    snapshot.int_vector_req = as_context(cpu_)->int_vector_req != 0;
+    snapshot.prefix = as_context(cpu_)->prefix;
+    snapshot.tstate = static_cast<uint32_t>(as_context(cpu_)->tstate);
+    snapshot.op_tstate = as_context(cpu_)->op_tstate;
     return snapshot;
+}
+
+void CPU::restore(const RegisterSnapshot& snapshot) {
+    z80ex_set_reg(as_context(cpu_), regAF, snapshot.af);
+    z80ex_set_reg(as_context(cpu_), regBC, snapshot.bc);
+    z80ex_set_reg(as_context(cpu_), regDE, snapshot.de);
+    z80ex_set_reg(as_context(cpu_), regHL, snapshot.hl);
+    z80ex_set_reg(as_context(cpu_), regAF_, snapshot.af_shadow);
+    z80ex_set_reg(as_context(cpu_), regBC_, snapshot.bc_shadow);
+    z80ex_set_reg(as_context(cpu_), regDE_, snapshot.de_shadow);
+    z80ex_set_reg(as_context(cpu_), regHL_, snapshot.hl_shadow);
+    z80ex_set_reg(as_context(cpu_), regIX, snapshot.ix);
+    z80ex_set_reg(as_context(cpu_), regIY, snapshot.iy);
+    z80ex_set_reg(as_context(cpu_), regPC, snapshot.pc);
+    z80ex_set_reg(as_context(cpu_), regSP, snapshot.sp);
+    z80ex_set_reg(as_context(cpu_), regI, snapshot.i);
+    z80ex_set_reg(as_context(cpu_), regR, snapshot.r);
+    z80ex_set_reg(as_context(cpu_), regR7, snapshot.r7);
+    z80ex_set_reg(as_context(cpu_), regIM, snapshot.interrupt_mode);
+    z80ex_set_reg(as_context(cpu_), regIFF1, snapshot.iff1 ? 1U : 0U);
+    z80ex_set_reg(as_context(cpu_), regIFF2, snapshot.iff2 ? 1U : 0U);
+
+    as_context(cpu_)->memptr.w = snapshot.memptr;
+    as_context(cpu_)->halted = snapshot.halted ? 1 : 0;
+    as_context(cpu_)->noint_once = snapshot.noint_once ? 1 : 0;
+    as_context(cpu_)->reset_PV_on_int = snapshot.reset_pv_on_int ? 1 : 0;
+    as_context(cpu_)->doing_opcode = snapshot.doing_opcode ? 1 : 0;
+    as_context(cpu_)->int_vector_req = snapshot.int_vector_req ? 1 : 0;
+    as_context(cpu_)->prefix = snapshot.prefix;
+    as_context(cpu_)->tstate = snapshot.tstate;
+    as_context(cpu_)->op_tstate = snapshot.op_tstate;
+    int_line_ = snapshot.int_line;
 }
 
 bool CPU::is_halted() const {

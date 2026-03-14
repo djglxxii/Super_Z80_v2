@@ -8,6 +8,10 @@ namespace superz80 {
 
 class VBlank {
 public:
+    struct Snapshot {
+        bool active = false;
+    };
+
     static constexpr uint32_t kBeginScanline = 192U;
     static constexpr uint8_t kIrqBit = 0x01U;
 
@@ -17,6 +21,8 @@ public:
     void update_scanline(uint32_t scanline);
 
     bool active() const;
+    Snapshot snapshot() const;
+    void restore(const Snapshot& snapshot);
 
 private:
     IRQController& irq_;

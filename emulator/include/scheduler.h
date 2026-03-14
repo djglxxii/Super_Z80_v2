@@ -14,6 +14,12 @@ namespace superz80 {
 
 class Scheduler {
 public:
+    struct Snapshot {
+        AudioMixer::Snapshot audio_mixer = {};
+        uint32_t frame = 0U;
+        uint32_t scanline = 0U;
+    };
+
     static constexpr uint32_t kScanlinesPerFrame = 262U;
     static constexpr uint32_t kInstructionsPerScanline = 10U;
     static constexpr uint32_t kYm2151CyclesPerScanline = 10U;
@@ -27,6 +33,8 @@ public:
     uint32_t frame() const;
     uint32_t scanline() const;
     int16_t current_audio_sample() const;
+    Snapshot snapshot() const;
+    void restore(const Snapshot& snapshot);
 
 private:
     CPU& cpu_;

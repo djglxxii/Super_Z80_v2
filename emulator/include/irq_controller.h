@@ -6,6 +6,11 @@ namespace superz80 {
 
 class IRQController {
 public:
+    struct Snapshot {
+        uint8_t status = 0x00U;
+        uint8_t enable = 0x00U;
+    };
+
     IRQController();
 
     void reset();
@@ -20,6 +25,8 @@ public:
     void acknowledge(uint8_t mask);
 
     bool irq_line() const;
+    Snapshot snapshot() const;
+    void restore(const Snapshot& snapshot);
 
 private:
     uint8_t irq_status_;

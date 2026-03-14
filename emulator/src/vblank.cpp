@@ -26,4 +26,12 @@ bool VBlank::active() const {
     return vblank_active_;
 }
 
+VBlank::Snapshot VBlank::snapshot() const {
+    return {vblank_active_};
+}
+
+void VBlank::restore(const Snapshot& snapshot) {
+    vblank_active_ = snapshot.active;
+}
+
 } // namespace superz80

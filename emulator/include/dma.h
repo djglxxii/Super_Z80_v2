@@ -36,6 +36,7 @@ public:
 
     bool busy() const;
     Snapshot snapshot() const;
+    void restore(const Snapshot& snapshot);
 
 private:
     Bus& bus_;

@@ -52,6 +52,29 @@ public:
     static constexpr std::size_t kFramebufferSize = kFramebufferWidth * kFramebufferHeight;
     static constexpr std::size_t kPaletteEntryCount = 256U;
     static constexpr uint32_t kPaletteResetValue = 0x00000000U;
+    struct Snapshot {
+        std::array<uint8_t, kVramSize> vram = {};
+        std::array<uint8_t, kFramebufferSize> framebuffer = {};
+        std::array<uint8_t, kFramebufferSize> sprite_mask = {};
+        std::array<uint32_t, kPaletteEntryCount> palette = {};
+        uint16_t vram_ptr = 0U;
+        uint8_t control_address_low = 0U;
+        uint8_t palette_index = 0U;
+        uint8_t control_reg = 0U;
+        bool control_address_latch_low = false;
+        uint8_t bg_scroll_x = 0U;
+        uint8_t bg_scroll_y = 0U;
+        uint8_t fg_scroll_x = 0U;
+        uint8_t fg_scroll_y = 0U;
+        uint8_t bg_pattern_bank = 0U;
+        uint8_t fg_pattern_bank = 0U;
+        std::array<uint8_t, kSpritesPerScanline> sprite_scanline_list = {};
+        uint8_t sprite_scanline_count = 0U;
+        bool sprite_overflow = false;
+        bool sprite_collision = false;
+        bool vblank_active = false;
+        bool frame_ready = false;
+    };
 
     VDP();
 
@@ -79,6 +102,8 @@ public:
     uint8_t fg_scroll_y() const;
     uint8_t bg_pattern_bank() const;
     uint8_t fg_pattern_bank() const;
+    Snapshot snapshot() const;
+    void restore(const Snapshot& snapshot);
 
 private:
     void render_background();

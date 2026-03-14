@@ -1,6 +1,7 @@
 #include "bus.h"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 
@@ -185,6 +186,32 @@ YM2151& Bus::ym2151() {
 
 const YM2151& Bus::ym2151() const {
     return ym2151_;
+}
+
+Bus::Snapshot Bus::snapshot() const {
+    Snapshot snapshot = {};
+    std::copy(rom_.begin(), rom_.end(), snapshot.rom.begin());
+    snapshot.io = io_.snapshot();
+    snapshot.irq_controller = irq_controller_.snapshot();
+    snapshot.memory = memory_.snapshot();
+    snapshot.apu = apu_.snapshot();
+    snapshot.ym2151 = ym2151_.snapshot();
+    snapshot.vdp = vdp_.snapshot();
+    snapshot.vblank = vblank_.snapshot();
+    snapshot.dma = dma_.snapshot();
+    return snapshot;
+}
+
+void Bus::restore(const Snapshot& snapshot) {
+    rom_.assign(snapshot.rom.begin(), snapshot.rom.end());
+    io_.restore(snapshot.io);
+    irq_controller_.restore(snapshot.irq_controller);
+    memory_.restore(snapshot.memory);
+    apu_.restore(snapshot.apu);
+    ym2151_.restore(snapshot.ym2151);
+    vdp_.restore(snapshot.vdp);
+    vblank_.restore(snapshot.vblank);
+    dma_.restore(snapshot.dma);
 }
 
 bool Bus::is_rom_address(uint16_t address) {

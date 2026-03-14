@@ -17,6 +17,15 @@ namespace superz80 {
 
 class Bus {
 public:
+    using MemorySnapshot = Memory::Snapshot;
+    using IoSnapshot = IO::Snapshot;
+    using IrqSnapshot = IRQController::Snapshot;
+    using VdpSnapshot = VDP::Snapshot;
+    using VBlankSnapshot = VBlank::Snapshot;
+    using DmaSnapshot = DMA::Snapshot;
+    using ApuSnapshot = APU::Snapshot;
+    using Ym2151Snapshot = YM2151::Snapshot;
+
     static constexpr uint16_t kRomStart = 0x0000U;
     static constexpr uint16_t kRomEnd = 0x7FFFU;
     static constexpr uint16_t kUnmappedStart = 0x8000U;
@@ -64,6 +73,17 @@ public:
     static constexpr uint8_t kAudioControlPort = APU::kControlPort;
     static constexpr uint8_t kYm2151RegisterSelectPort = YM2151::kRegisterSelectPort;
     static constexpr uint8_t kYm2151RegisterDataPort = YM2151::kRegisterDataPort;
+    struct Snapshot {
+        std::array<uint8_t, kRomSize> rom = {};
+        IoSnapshot io = {};
+        IrqSnapshot irq_controller = {};
+        MemorySnapshot memory = {};
+        ApuSnapshot apu = {};
+        Ym2151Snapshot ym2151 = {};
+        VdpSnapshot vdp = {};
+        VBlankSnapshot vblank = {};
+        DmaSnapshot dma = {};
+    };
 
     Bus();
 
@@ -90,6 +110,8 @@ public:
     const APU& apu() const;
     YM2151& ym2151();
     const YM2151& ym2151() const;
+    Snapshot snapshot() const;
+    void restore(const Snapshot& snapshot);
 
 private:
     static constexpr uint8_t kOpenBusValue = 0xFFU;

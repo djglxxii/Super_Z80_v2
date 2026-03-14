@@ -57,4 +57,14 @@ int16_t Scheduler::current_audio_sample() const {
     return audio_mixer_.current_sample();
 }
 
+Scheduler::Snapshot Scheduler::snapshot() const {
+    return {audio_mixer_.snapshot(), frame_, scanline_};
+}
+
+void Scheduler::restore(const Snapshot& snapshot) {
+    audio_mixer_.restore(snapshot.audio_mixer);
+    frame_ = snapshot.frame;
+    scanline_ = snapshot.scanline;
+}
+
 } // namespace superz80

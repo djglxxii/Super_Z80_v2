@@ -35,4 +35,13 @@ bool IRQController::irq_line() const {
     return (irq_status_ & irq_enable_) != 0U;
 }
 
+IRQController::Snapshot IRQController::snapshot() const {
+    return {irq_status_, irq_enable_};
+}
+
+void IRQController::restore(const Snapshot& snapshot) {
+    irq_status_ = snapshot.status;
+    irq_enable_ = snapshot.enable;
+}
+
 } // namespace superz80

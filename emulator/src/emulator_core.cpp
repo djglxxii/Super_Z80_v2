@@ -103,6 +103,32 @@ EmulatorCore::TimingSnapshot EmulatorCore::timing_snapshot() const {
     };
 }
 
+EmulatorCore::Snapshot EmulatorCore::capture_snapshot() const {
+    return {
+        bus_.snapshot(),
+        cpu_.snapshot(),
+        scheduler_.snapshot(),
+        audio_buffer_,
+        audio_read_index_,
+        audio_write_index_,
+        audio_buffer_size_,
+        scanline_sample_remainder_,
+        sample_tick_remainder_,
+    };
+}
+
+void EmulatorCore::restore_snapshot(const Snapshot& snapshot) {
+    bus_.restore(snapshot.bus);
+    cpu_.restore(snapshot.cpu);
+    scheduler_.restore(snapshot.scheduler);
+    audio_buffer_ = snapshot.audio_buffer;
+    audio_read_index_ = snapshot.audio_read_index;
+    audio_write_index_ = snapshot.audio_write_index;
+    audio_buffer_size_ = snapshot.audio_buffer_size;
+    scanline_sample_remainder_ = snapshot.scanline_sample_remainder;
+    sample_tick_remainder_ = snapshot.sample_tick_remainder;
+}
+
 EmulatorCore::RomSnapshot EmulatorCore::rom_snapshot() const {
     RomSnapshot snapshot = {};
     for (std::size_t offset = 0U; offset < snapshot.size(); ++offset) {

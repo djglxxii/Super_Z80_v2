@@ -64,11 +64,31 @@ public:
     static constexpr uint8_t kTimerBStatusBit = 0x02U;
 
     struct ChannelSnapshot {
+        struct OperatorSnapshot {
+            uint8_t detune = 0U;
+            uint8_t multiple = 0U;
+            uint8_t total_level = 0U;
+            uint8_t attack_rate = 0U;
+            uint8_t decay_rate = 0U;
+            uint8_t sustain_rate = 0U;
+            uint8_t release_rate = 0U;
+            uint8_t sustain_level = 0U;
+            uint8_t key_scale = 0U;
+            bool key_on = false;
+            uint32_t phase = 0U;
+            uint32_t phase_increment = 0U;
+            uint32_t phase_counter = 0U;
+            uint16_t envelope_level = 0U;
+            YM2151EnvelopeState envelope_state = YM2151EnvelopeState::Off;
+            int16_t last_output = 0;
+        };
+
         uint16_t frequency = 0U;
         uint8_t block = 0U;
         uint8_t algorithm = 0U;
         uint8_t feedback = 0U;
         uint8_t key_on_mask = 0U;
+        std::array<OperatorSnapshot, kOperatorsPerChannel> operators = {};
     };
     struct TimerSnapshot {
         uint16_t latch = 0U;
@@ -108,6 +128,7 @@ public:
     uint64_t tick_call_count() const;
     uint64_t accumulated_cycles() const;
     Snapshot snapshot() const;
+    void restore(const Snapshot& snapshot);
 
 private:
     static constexpr uint32_t kSineTableSize = 1024U;

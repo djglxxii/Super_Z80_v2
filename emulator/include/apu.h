@@ -81,6 +81,7 @@ public:
     uint16_t noise_lfsr() const;
     uint8_t noise_output_bit() const;
     Snapshot snapshot() const;
+    void restore(const Snapshot& snapshot);
 
 private:
     static constexpr std::size_t kToneAChannel = 0U;

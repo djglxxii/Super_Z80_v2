@@ -26,4 +26,12 @@ int16_t AudioMixer::current_sample() const {
     return last_sample_;
 }
 
+AudioMixer::Snapshot AudioMixer::snapshot() const {
+    return {last_sample_};
+}
+
+void AudioMixer::restore(const Snapshot& snapshot) {
+    last_sample_ = snapshot.current_sample;
+}
+
 } // namespace superz80

@@ -9,12 +9,15 @@ namespace superz80 {
 class Memory {
 public:
     static constexpr std::size_t kSize = 65536;
+    using Snapshot = std::array<uint8_t, kSize>;
 
     Memory();
 
     uint8_t read(uint16_t address) const;
     void write(uint16_t address, uint8_t value);
     void reset();
+    Snapshot snapshot() const;
+    void restore(const Snapshot& snapshot);
 
 private:
     std::array<uint8_t, kSize> ram_;

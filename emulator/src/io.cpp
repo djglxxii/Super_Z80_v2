@@ -75,17 +75,29 @@ bool IO::button(Button button) const {
 }
 
 IO::Snapshot IO::snapshot() const {
-    return {
-        pad1_.up,
-        pad1_.down,
-        pad1_.left,
-        pad1_.right,
-        pad1_.a,
-        pad1_.b,
-        pad1_.start,
-        read_controller_port(kPad1Port),
-        read_controller_port(kPad1SysPort),
-    };
+    Snapshot snapshot = {};
+    snapshot.up = pad1_.up;
+    snapshot.down = pad1_.down;
+    snapshot.left = pad1_.left;
+    snapshot.right = pad1_.right;
+    snapshot.a = pad1_.a;
+    snapshot.b = pad1_.b;
+    snapshot.start = pad1_.start;
+    snapshot.pad1 = read_controller_port(kPad1Port);
+    snapshot.pad1_sys = read_controller_port(kPad1SysPort);
+    snapshot.ports = ports_;
+    return snapshot;
+}
+
+void IO::restore(const Snapshot& snapshot) {
+    pad1_.up = snapshot.up;
+    pad1_.down = snapshot.down;
+    pad1_.left = snapshot.left;
+    pad1_.right = snapshot.right;
+    pad1_.a = snapshot.a;
+    pad1_.b = snapshot.b;
+    pad1_.start = snapshot.start;
+    ports_ = snapshot.ports;
 }
 
 uint8_t IO::read_controller_port(uint8_t port) const {

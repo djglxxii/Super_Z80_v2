@@ -18,4 +18,12 @@ void Memory::reset() {
     ram_.fill(0x00U);
 }
 
+Memory::Snapshot Memory::snapshot() const {
+    return ram_;
+}
+
+void Memory::restore(const Snapshot& snapshot) {
+    ram_ = snapshot;
+}
+
 } // namespace superz80
