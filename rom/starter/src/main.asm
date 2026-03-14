@@ -3,7 +3,7 @@
     INCLUDE "sdk/inc/super_z80.inc"
     INCLUDE "sdk/runtime/inc/runtime.inc"
 
-    ORG SZ_RUNTIME_MAIN_ORG
+    DEFS SZ_RUNTIME_MAIN_ORG - $, $00
 
 sdk_main:
     ld hl, sz_font_8x8

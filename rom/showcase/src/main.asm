@@ -11,7 +11,7 @@
     INCLUDE "inc/memory_map.inc"
     INCLUDE "inc/vdp_helpers.inc"
 
-    ORG SZ_RUNTIME_MAIN_ORG
+    DEFS SZ_RUNTIME_MAIN_ORG - $, $00
 
 sdk_main:
     call showcase_init

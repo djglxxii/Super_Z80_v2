@@ -20,8 +20,11 @@ showcase_demo_sprite_tile_count EQU (showcase_demo_sprite_tiles_end - showcase_d
 
 showcase_vdp_init_registers:
     ; Reset local VDP-facing state to the baseline used by the ROM.
+    ; NOTE: Do not write a single byte to the VDP control port here.
+    ; The control port uses a two-byte address latch (low then high),
+    ; and a lone write leaves the latch phase offset, causing every
+    ; subsequent vdp_set_address call to byte-swap and misroute.
     xor a
-    out (SZ_PORT_VDP_CONTROL), a
     out (SZ_PORT_VDP_BG_SCROLL_X), a
     out (SZ_PORT_VDP_BG_SCROLL_Y), a
     out (SZ_PORT_VDP_FG_SCROLL_X), a

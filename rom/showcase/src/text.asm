@@ -80,19 +80,27 @@ showcase_select_fg_buffer:
     ret
 
 showcase_bg_text_write_line_at:
+    push hl
     call showcase_select_bg_buffer
+    pop hl
     jp showcase_text_write_line_at
 
 showcase_bg_text_write_string_at:
+    push hl
     call showcase_select_bg_buffer
+    pop hl
     jp showcase_text_write_string_at
 
 showcase_fg_text_write_line_at:
+    push hl
     call showcase_select_fg_buffer
+    pop hl
     jp showcase_text_write_line_at
 
 showcase_fg_text_write_string_at:
+    push hl
     call showcase_select_fg_buffer
+    pop hl
     jp showcase_text_write_string_at
 
 showcase_text_clear_buffer:
@@ -118,7 +126,11 @@ showcase_text_write_line_at:
 
 showcase_text_write_string_at:
     ; Writes a zero-terminated string without storing hidden cursor state.
+    ; HL = string pointer, B = X, C = Y.
+    ; get_xy_address overwrites HL, so save/restore the string pointer.
+    push hl
     call showcase_text_get_xy_address
+    pop hl
     ld a, b
     push af
 .write_loop
@@ -138,7 +150,9 @@ showcase_text_write_string_at:
     pop af
     ld b, a
     push af
+    push hl
     call showcase_text_get_xy_address
+    pop hl
     jr .write_loop
 .done
     pop af
