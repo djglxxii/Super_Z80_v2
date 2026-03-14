@@ -36,6 +36,8 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- Planning update recorded: the canonical frontend plan now extends beyond M58 with `M59 - Display Scaling & Window Sizing` and `M60 - ROM Browser Integration`.
+- The next official frontend milestone is now `M59 - Display Scaling & Window Sizing`.
 - M58 complete.
 - Frontend stabilization now clamps first-use ImGui window placement and sizing against the active viewport work area so the default debug panels stay visible inside the smaller `640x480` SDL shell windows instead of spawning off-screen.
 - Frontend layout persistence now uses Dear ImGui's built-in ini load/save flow through an SDL preference-directory-backed `super_z80_frontend_layout.ini` path, with fallback to the previous local filename when a preference path is unavailable.

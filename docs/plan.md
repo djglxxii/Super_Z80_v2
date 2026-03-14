@@ -475,6 +475,52 @@ Deliver a stable developer-facing emulator UI.
 
 ---
 
+# M59 – Display Scaling & Window Sizing
+
+Features:
+
+* integer display scaling presets for emulator window
+* selectable scaling values (recommended: 2x, 4x, 6x)
+* scaling appropriate for high-resolution displays (4K monitors)
+* window resizing behavior consistent with selected scale
+* frontend persistence of selected scale between runs
+
+Verification:
+
+* emulator window correctly resizes to selected scale
+* framebuffer content scales correctly without distortion
+* scaling changes do not affect emulator timing
+* headless execution remains unaffected
+
+Purpose:
+
+Improve usability on high-resolution displays and allow developers to comfortably view emulator output.
+
+---
+
+# M60 – ROM Browser Integration
+
+Features:
+
+* graphical ROM selection dialog
+* in-application file browser for navigating directories
+* ability to select ROM files without manually entering paths
+* graceful handling of invalid or unsupported files
+
+Verification:
+
+* ROM browser opens from frontend UI
+* directory navigation functions correctly
+* selected ROM loads successfully
+* invalid selections produce safe error handling
+* headless execution remains unaffected
+
+Purpose:
+
+Improve ROM loading usability and remove reliance on manual path entry.
+
+---
+
 # Verification Strategy
 
 Frontend milestones must verify:
