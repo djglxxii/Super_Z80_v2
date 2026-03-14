@@ -565,6 +565,28 @@ Improve ROM loading usability and remove reliance on manual path entry.
 
 ---
 
+# M63 – Interactive SDL Audio Runtime Parity Fix
+
+Features:
+
+* integrate SDL audio playback into the visible interactive runtime path
+* ensure visible SDL runtime supports simultaneous window, input, and audio
+* resolve CLI ambiguity so combined SDL flags do not silently choose a non-audio interactive path
+* preserve existing core audio generation and deterministic headless behavior
+
+Verification:
+
+* visible SDL runtime produces audible ROM output
+* interactive input runtime and audio playback coexist correctly
+* combined SDL launch paths no longer silently select a non-audio shell
+* headless execution remains unaffected
+
+Purpose:
+
+Restore audible behavior in the visible interactive runtime and correct the gap between completed frontend milestones and current runtime behavior.
+
+---
+
 # Verification Strategy
 
 Frontend milestones must verify:
