@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M61
+M62
 
 ## Audio Status
 Current validated audio implementation:
@@ -42,8 +42,8 @@ PCM remains excluded from the platform design.
 - Headless ROM execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xC5117D35`.
 - CI-safe SDL smoke checks still succeed under dummy/software drivers for both `--sdl-input --rom rom/showcase/build/showcase.bin` and `--sdl-audio --rom rom/showcase/build/showcase.bin`, confirming the framebuffer presentation path integrates without startup regressions.
 - Added narrow automated coverage proving the scheduler renders the VDP framebuffer at frame wrap and that `EmulatorCore` can return a read-only rendered framebuffer snapshot for frontend use.
-- The canonical frontend plan now inserts `M60 - Display Pipeline Bring-Up` ahead of ROM browser work; the previously completed ROM browser integration is therefore renumbered to `M61`, and `M60` is now the next required frontend execution milestone.
-- M61 complete.
+- The canonical frontend plan now sequences `M60 - Display Pipeline Bring-Up`, `M61 - Unified SDL Interactive Runtime Audio`, and `M62 - ROM Browser Integration`; the previously completed ROM browser integration is therefore renumbered to `M62`, and unified SDL interactive audio is now the next required frontend runtime milestone.
+- M62 complete.
 - The frontend `File -> Load ROM...` flow now opens an in-application ImGui ROM browser that lists the current directory, supports parent/up navigation, allows entering subdirectories, and can load a selected ROM file without manually typing its full path.
 - The ROM browser keeps the existing manual path field as a narrow fallback, marks likely ROM file extensions in the browser list, and reuses the existing runtime-owned ROM load/reset path so reload behavior and emulator-core semantics remain unchanged.
 - Frontend settings persistence now stores `rom_browser_directory=<path>` alongside `display_scale=<n>` in `super_z80_frontend_settings.cfg`, restoring the last browsed directory when available and otherwise defaulting to the current ROM directory or process working directory.

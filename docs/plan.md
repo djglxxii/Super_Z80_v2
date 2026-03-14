@@ -520,7 +520,29 @@ Restore visible game rendering in the frontend and complete the missing runtime 
 
 ---
 
-# M61 – ROM Browser Integration
+# M61 – Unified SDL Interactive Runtime Audio
+
+Features:
+
+* integrate SDL audio playback into the visible interactive runtime
+* support simultaneous window, input, and audio in one SDL runtime path
+* resolve CLI ambiguity when both SDL input and audio flags are requested
+* preserve existing core audio generation and deterministic headless behavior
+
+Verification:
+
+* visible SDL runtime produces audible ROM output
+* interactive input runtime and audio playback coexist correctly
+* combined SDL launch paths no longer silently select a non-audio shell
+* headless execution remains unaffected
+
+Purpose:
+
+Make the visible interactive runtime audibly functional and remove the misleading separation between visible SDL mode and audio-enabled SDL mode.
+
+---
+
+# M62 – ROM Browser Integration
 
 Features:
 
