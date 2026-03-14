@@ -36,6 +36,12 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M60 complete.
+- The runtime display pipeline now renders a complete VDP framebuffer at scheduler frame wrap and exposes a read-only `EmulatorCore` framebuffer snapshot for frontend presentation without moving display ownership into the core.
+- The SDL frontend now owns an emulator framebuffer texture path that uploads RGBA pixels, preserves the existing integer display scale presets with centered aspect-correct presentation, and draws emulator video before the ImGui debug overlay.
+- Headless ROM execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xC5117D35`.
+- CI-safe SDL smoke checks still succeed under dummy/software drivers for both `--sdl-input --rom rom/showcase/build/showcase.bin` and `--sdl-audio --rom rom/showcase/build/showcase.bin`, confirming the framebuffer presentation path integrates without startup regressions.
+- Added narrow automated coverage proving the scheduler renders the VDP framebuffer at frame wrap and that `EmulatorCore` can return a read-only rendered framebuffer snapshot for frontend use.
 - The canonical frontend plan now inserts `M60 - Display Pipeline Bring-Up` ahead of ROM browser work; the previously completed ROM browser integration is therefore renumbered to `M61`, and `M60` is now the next required frontend execution milestone.
 - M61 complete.
 - The frontend `File -> Load ROM...` flow now opens an in-application ImGui ROM browser that lists the current directory, supports parent/up navigation, allows entering subdirectories, and can load a selected ROM file without manually typing its full path.

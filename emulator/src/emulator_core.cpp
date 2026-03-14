@@ -153,6 +153,14 @@ EmulatorCore::VramSnapshot EmulatorCore::vram_snapshot() const {
     return snapshot;
 }
 
+EmulatorCore::FramebufferSnapshot EmulatorCore::framebuffer_snapshot() const {
+    FramebufferSnapshot snapshot = {};
+    for (std::size_t pixel_index = 0U; pixel_index < snapshot.size(); ++pixel_index) {
+        snapshot[pixel_index] = bus_.vdp().framebuffer_color(pixel_index);
+    }
+    return snapshot;
+}
+
 EmulatorCore::SpriteTableSnapshot EmulatorCore::sprite_table_snapshot() const {
     SpriteTableSnapshot snapshot = {};
     for (std::size_t sprite_index = 0U; sprite_index < snapshot.size(); ++sprite_index) {

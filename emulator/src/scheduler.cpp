@@ -31,6 +31,11 @@ void Scheduler::step_scanline() {
     audio_mixer_.tick();
 
     ++scanline_;
+    const bool frame_complete = scanline_ == kScanlinesPerFrame;
+    if (frame_complete) {
+        vdp_.render_frame();
+    }
+
     if (scanline_ == kScanlinesPerFrame) {
         scanline_ = 0U;
         ++frame_;

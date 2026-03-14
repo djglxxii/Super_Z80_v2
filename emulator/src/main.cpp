@@ -441,6 +441,18 @@ void populate_frontend_runtime_state(superz80::frontend::Frontend& frontend,
     frontend.set_runtime_control_state(runtime_state);
 }
 
+void render_frontend_frame(superz80::frontend::Frontend& frontend,
+                           SDL_Renderer* renderer,
+                           const EmulatorCore& core) {
+    const EmulatorCore::FramebufferSnapshot framebuffer = core.framebuffer_snapshot();
+    frontend.update_framebuffer(framebuffer.data(), framebuffer.size());
+    SDL_SetRenderDrawColor(renderer, 12, 16, 20, 255);
+    SDL_RenderClear(renderer);
+    frontend.render_framebuffer();
+    frontend.render_overlay();
+    SDL_RenderPresent(renderer);
+}
+
 template <typename ResetFn, typename LoadRomFn, typename SaveSnapshotFn, typename RestoreSnapshotFn>
 void apply_runtime_control_commands(superz80::frontend::Frontend& frontend,
                                     RuntimeLoopState& loop_state,
@@ -741,10 +753,7 @@ int run_sdl_audio_shell(EmulatorCore& core, const std::string& startup_rom_path)
                 running = false;
             }
         }
-
-        SDL_SetRenderDrawColor(renderer, 12, 16, 20, 255);
-        SDL_RenderClear(renderer);
-        frontend.render();
+        frontend.compose_ui();
 
         apply_runtime_control_commands(
             frontend,
@@ -760,7 +769,7 @@ int run_sdl_audio_shell(EmulatorCore& core, const std::string& startup_rom_path)
         }
 
         pump_audio_output(core, audio_output);
-        SDL_RenderPresent(renderer);
+        render_frontend_frame(frontend, renderer, core);
         frontend.end_frame();
 
         SDL_Delay(1);
@@ -948,10 +957,7 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
                 print_controller_state(core.bus());
             }
         }
-
-        SDL_SetRenderDrawColor(renderer, 12, 16, 20, 255);
-        SDL_RenderClear(renderer);
-        frontend.render();
+        frontend.compose_ui();
 
         apply_runtime_control_commands(
             frontend,
@@ -966,7 +972,7 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
             step_one_emulator_frame(core);
         }
 
-        SDL_RenderPresent(renderer);
+        render_frontend_frame(frontend, renderer, core);
         frontend.end_frame();
 
         SDL_Delay(16);

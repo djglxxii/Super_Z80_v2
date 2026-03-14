@@ -1,12 +1,15 @@
 #ifndef SUPER_Z80_FRONTEND_FRONTEND_H
 #define SUPER_Z80_FRONTEND_FRONTEND_H
 
+#include <cstddef>
+#include <cstdint>
 #include <string>
 
 #include "debug_panel_host.h"
 
 struct SDL_Window;
 struct SDL_Renderer;
+struct SDL_Texture;
 union SDL_Event;
 
 namespace superz80::frontend {
@@ -40,7 +43,10 @@ public:
     void shutdown();
     void handle_event(const SDL_Event& event);
     void begin_frame();
-    void render();
+    void compose_ui();
+    void update_framebuffer(const uint32_t* rgba_pixels, std::size_t pixel_count);
+    void render_framebuffer();
+    void render_overlay();
     void end_frame();
     void set_runtime_control_state(const RuntimeControlState& state);
     RuntimeControlCommands consume_runtime_control_commands();
@@ -54,6 +60,7 @@ private:
     unsigned int sanitized_display_scale(unsigned int requested_scale) const;
     void apply_display_scale(unsigned int scale, bool persist);
     void persist_settings() const;
+    bool ensure_framebuffer_texture();
 
     bool initialized_;
     bool ui_initialized_;
@@ -65,6 +72,7 @@ private:
 #if defined(SUPER_Z80_HAS_SDL)
     SDL_Window* window_ = nullptr;
     SDL_Renderer* renderer_ = nullptr;
+    SDL_Texture* framebuffer_texture_ = nullptr;
 #endif
     DebugPanelHost debug_panel_host_;
 };

@@ -22,6 +22,7 @@ public:
     using RomSnapshot = std::array<uint8_t, superz80::Bus::kRomSize>;
     using RamSnapshot = std::array<uint8_t, superz80::Bus::kRamWindowSize>;
     using VramSnapshot = std::array<uint8_t, superz80::VDP::kVramSize>;
+    using FramebufferSnapshot = std::array<uint32_t, superz80::VDP::kFramebufferSize>;
     using Ym2151Snapshot = superz80::YM2151::Snapshot;
     struct SpriteSnapshot {
         uint8_t x = 0U;
@@ -82,6 +83,7 @@ public:
     RomSnapshot rom_snapshot() const;
     RamSnapshot ram_snapshot() const;
     VramSnapshot vram_snapshot() const;
+    FramebufferSnapshot framebuffer_snapshot() const;
     SpriteTableSnapshot sprite_table_snapshot() const;
     uint32_t frame() const;
     uint32_t scanline() const;

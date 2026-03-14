@@ -112,6 +112,24 @@ int main() {
     ok = expect_equal_u32("frame-wrap-scanline-reset", scheduler.scanline(), 0U) && ok;
     ok = expect_equal_u32("frame-wrap-frame-increment", scheduler.frame(), 1U) && ok;
 
+    bus.reset();
+    cpu.reset();
+    scheduler.reset();
+    bus.vdp().write_vram(superz80::VDP::kBgTilemapBase, 0x01U);
+    for (std::size_t index = 0U; index < superz80::VDP::kTileSizeBytes; ++index) {
+        bus.vdp().write_vram(static_cast<uint16_t>(superz80::VDP::kPatternBank0Base +
+                                                   superz80::VDP::kTileSizeBytes + index),
+                             0x01U);
+    }
+    bus.vdp().set_palette_entry(0x01U, 0xAA0000FFU);
+    for (uint32_t i = 0U; i < superz80::Scheduler::kScanlinesPerFrame; ++i) {
+        scheduler.step_scanline();
+    }
+
+    ok = expect_equal_u8("scheduler-renders-framebuffer-at-frame-wrap",
+                         static_cast<uint8_t>((bus.vdp().framebuffer_color(0U) >> 24U) & 0xFFU),
+                         0xAAU) && ok;
+
     constexpr std::array<uint8_t, 5> kRom = {
         0x3EU, 0x44U, // LD A,0x44
         0xD3U, 0x20U, // OUT (0x20),A

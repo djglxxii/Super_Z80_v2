@@ -273,6 +273,23 @@ int main() {
                          static_cast<uint8_t>(sprite_table_snapshot.size()),
                          static_cast<uint8_t>(superz80::VDP::kMaxSprites)) && ok;
 
+    EmulatorCore framebuffer_core;
+    framebuffer_core.initialize();
+    framebuffer_core.bus().vdp().write_vram(superz80::VDP::kBgTilemapBase, 0x01U);
+    for (std::size_t index = 0U; index < superz80::VDP::kTileSizeBytes; ++index) {
+        framebuffer_core.bus().vdp().write_vram(
+            static_cast<uint16_t>(superz80::VDP::kPatternBank0Base +
+                                  superz80::VDP::kTileSizeBytes + index),
+            0x01U);
+    }
+    framebuffer_core.bus().vdp().set_palette_entry(0x01U, 0x11223344U);
+    framebuffer_core.bus().vdp().render_frame();
+    const EmulatorCore::FramebufferSnapshot framebuffer_snapshot =
+        framebuffer_core.framebuffer_snapshot();
+    ok = expect_equal_u32("framebuffer-snapshot-first-pixel",
+                          framebuffer_snapshot[0U],
+                          0x11223344U) && ok;
+
     EmulatorCore restore_core;
     restore_core.initialize();
     constexpr std::array<uint8_t, 8> kDeterminismRom = {
