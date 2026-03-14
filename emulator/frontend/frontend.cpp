@@ -1,5 +1,7 @@
 #include "frontend.h"
 
+#include <utility>
+
 #if defined(SUPER_Z80_HAS_SDL)
 #include <SDL.h>
 #include "backends/imgui_impl_sdl2.h"
@@ -8,6 +10,26 @@
 #endif
 
 namespace superz80::frontend {
+
+namespace {
+
+#if defined(SUPER_Z80_HAS_SDL)
+std::string determine_imgui_ini_path() {
+    constexpr const char* kFallbackPath = "super_z80_frontend_layout.ini";
+
+    char* pref_path = SDL_GetPrefPath("super_z80", "frontend");
+    if (pref_path == nullptr) {
+        return kFallbackPath;
+    }
+
+    std::string ini_path = pref_path;
+    SDL_free(pref_path);
+    ini_path += "super_z80_frontend_layout.ini";
+    return ini_path;
+}
+#endif
+
+} // namespace
 
 Frontend::Frontend()
     : initialized_(false),
@@ -28,8 +50,9 @@ bool Frontend::initialize(const FrontendConfig& config) {
         ImGui::CreateContext();
         ImGui::StyleColorsDark();
         ImGuiIO& io = ImGui::GetIO();
-        imgui_ini_path_ = "super_z80_frontend_layout.ini";
+        imgui_ini_path_ = determine_imgui_ini_path();
         io.IniFilename = imgui_ini_path_.c_str();
+        ImGui::LoadIniSettingsFromDisk(io.IniFilename);
         renderer_ = config.renderer;
 
         if (!ImGui_ImplSDL2_InitForSDLRenderer(config.window, config.renderer)) {
@@ -66,6 +89,10 @@ void Frontend::shutdown() {
 
 #if defined(SUPER_Z80_HAS_SDL)
     if (ui_initialized_) {
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.IniFilename != nullptr) {
+            ImGui::SaveIniSettingsToDisk(io.IniFilename);
+        }
         ImGui_ImplSDLRenderer2_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();

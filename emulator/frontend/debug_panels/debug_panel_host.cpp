@@ -14,6 +14,7 @@ constexpr uint16_t kMemoryBytesPerRow = 16U;
 constexpr uint16_t kMemoryPageSize = kMemoryRowsPerPage * kMemoryBytesPerRow;
 constexpr uint16_t kSpriteAttributeTableBase = 0x6000U;
 constexpr uint16_t kSpriteAttributeSizeBytes = 4U;
+constexpr float kWindowMargin = 12.0f;
 
 constexpr ImGuiCond kInitialWindowLayoutCondition = ImGuiCond_FirstUseEver;
 
@@ -38,6 +39,35 @@ void render_flag_row(const char* label, bool enabled) {
 
 void render_panel_toggle(const char* label, bool& visible) {
     ImGui::MenuItem(label, nullptr, &visible);
+}
+
+void set_initial_window_layout(const ImVec2 desired_position, const ImVec2 desired_size) {
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    const ImVec2 work_position = viewport != nullptr ? viewport->WorkPos : ImVec2(0.0f, 0.0f);
+    const ImVec2 work_size = viewport != nullptr ? viewport->WorkSize : ImVec2(1280.0f, 720.0f);
+
+    const float max_width = work_size.x > (kWindowMargin * 2.0f)
+                                ? work_size.x - (kWindowMargin * 2.0f)
+                                : work_size.x;
+    const float max_height = work_size.y > (kWindowMargin * 2.0f)
+                                 ? work_size.y - (kWindowMargin * 2.0f)
+                                 : work_size.y;
+
+    const ImVec2 clamped_size(
+        std::min(desired_size.x, std::max(max_width, 160.0f)),
+        std::min(desired_size.y, std::max(max_height, 120.0f)));
+
+    const float min_x = work_position.x + kWindowMargin;
+    const float min_y = work_position.y + kWindowMargin;
+    const float max_x = work_position.x + work_size.x - clamped_size.x - kWindowMargin;
+    const float max_y = work_position.y + work_size.y - clamped_size.y - kWindowMargin;
+
+    const ImVec2 clamped_position(
+        std::clamp(desired_position.x, min_x, std::max(min_x, max_x)),
+        std::clamp(desired_position.y, min_y, std::max(min_y, max_y)));
+
+    ImGui::SetNextWindowPos(clamped_position, kInitialWindowLayoutCondition);
+    ImGui::SetNextWindowSize(clamped_size, kInitialWindowLayoutCondition);
 }
 
 } // namespace
@@ -191,8 +221,7 @@ void DebugPanelHost::render_debug_overview_panel(const std::string& runtime_name
         return;
     }
 
-    ImGui::SetNextWindowPos(ImVec2(12.0f, 32.0f), kInitialWindowLayoutCondition);
-    ImGui::SetNextWindowSize(ImVec2(360.0f, 180.0f), kInitialWindowLayoutCondition);
+    set_initial_window_layout(ImVec2(12.0f, 32.0f), ImVec2(360.0f, 180.0f));
 
     if (!ImGui::Begin("Debug Overview", &panel_visibility_.debug_overview)) {
         ImGui::End();
@@ -232,8 +261,7 @@ void DebugPanelHost::render_emulator_control_panel(const std::string& runtime_na
         return;
     }
 
-    ImGui::SetNextWindowPos(ImVec2(12.0f, 220.0f), kInitialWindowLayoutCondition);
-    ImGui::SetNextWindowSize(ImVec2(420.0f, 260.0f), kInitialWindowLayoutCondition);
+    set_initial_window_layout(ImVec2(12.0f, 220.0f), ImVec2(420.0f, 260.0f));
 
     if (!ImGui::Begin("Emulator Control", &panel_visibility_.emulator_control)) {
         ImGui::End();
@@ -311,8 +339,7 @@ void DebugPanelHost::render_cpu_debug_panel() {
         return;
     }
 
-    ImGui::SetNextWindowPos(ImVec2(444.0f, 32.0f), kInitialWindowLayoutCondition);
-    ImGui::SetNextWindowSize(ImVec2(300.0f, 448.0f), kInitialWindowLayoutCondition);
+    set_initial_window_layout(ImVec2(444.0f, 32.0f), ImVec2(300.0f, 448.0f));
 
     if (!ImGui::Begin("CPU Debug", &panel_visibility_.cpu_debug)) {
         ImGui::End();
@@ -396,8 +423,7 @@ void DebugPanelHost::render_memory_viewer() {
         return;
     }
 
-    ImGui::SetNextWindowPos(ImVec2(756.0f, 32.0f), kInitialWindowLayoutCondition);
-    ImGui::SetNextWindowSize(ImVec2(520.0f, 320.0f), kInitialWindowLayoutCondition);
+    set_initial_window_layout(ImVec2(756.0f, 32.0f), ImVec2(520.0f, 320.0f));
 
     if (!ImGui::Begin("Memory Viewer", &panel_visibility_.memory_viewer)) {
         ImGui::End();
@@ -515,8 +541,7 @@ void DebugPanelHost::render_vram_viewer() {
         return;
     }
 
-    ImGui::SetNextWindowPos(ImVec2(756.0f, 364.0f), kInitialWindowLayoutCondition);
-    ImGui::SetNextWindowSize(ImVec2(520.0f, 320.0f), kInitialWindowLayoutCondition);
+    set_initial_window_layout(ImVec2(756.0f, 364.0f), ImVec2(520.0f, 320.0f));
 
     if (!ImGui::Begin("VRAM Viewer", &panel_visibility_.vram_viewer)) {
         ImGui::End();
@@ -592,8 +617,7 @@ void DebugPanelHost::render_sprite_debug_panel() {
         return;
     }
 
-    ImGui::SetNextWindowPos(ImVec2(12.0f, 492.0f), kInitialWindowLayoutCondition);
-    ImGui::SetNextWindowSize(ImVec2(420.0f, 280.0f), kInitialWindowLayoutCondition);
+    set_initial_window_layout(ImVec2(12.0f, 492.0f), ImVec2(420.0f, 280.0f));
 
     if (!ImGui::Begin("Sprite Debug", &panel_visibility_.sprite_debug)) {
         ImGui::End();
@@ -652,8 +676,7 @@ void DebugPanelHost::render_dma_debug_panel() {
         return;
     }
 
-    ImGui::SetNextWindowPos(ImVec2(444.0f, 492.0f), kInitialWindowLayoutCondition);
-    ImGui::SetNextWindowSize(ImVec2(300.0f, 180.0f), kInitialWindowLayoutCondition);
+    set_initial_window_layout(ImVec2(444.0f, 492.0f), ImVec2(300.0f, 180.0f));
 
     if (!ImGui::Begin("DMA Debug", &panel_visibility_.dma_debug)) {
         ImGui::End();
@@ -683,8 +706,7 @@ void DebugPanelHost::render_audio_debug_panel() {
         return;
     }
 
-    ImGui::SetNextWindowPos(ImVec2(12.0f, 32.0f), kInitialWindowLayoutCondition);
-    ImGui::SetNextWindowSize(ImVec2(560.0f, 420.0f), kInitialWindowLayoutCondition);
+    set_initial_window_layout(ImVec2(12.0f, 32.0f), ImVec2(560.0f, 420.0f));
 
     if (!ImGui::Begin("Audio Debug", &panel_visibility_.audio_debug)) {
         ImGui::End();
@@ -837,8 +859,7 @@ void DebugPanelHost::render_input_visualization_panel() {
         return;
     }
 
-    ImGui::SetNextWindowPos(ImVec2(444.0f, 684.0f), kInitialWindowLayoutCondition);
-    ImGui::SetNextWindowSize(ImVec2(300.0f, 180.0f), kInitialWindowLayoutCondition);
+    set_initial_window_layout(ImVec2(444.0f, 684.0f), ImVec2(300.0f, 180.0f));
 
     if (!ImGui::Begin("Input Visualization", &panel_visibility_.input_visualization)) {
         ImGui::End();
@@ -880,8 +901,7 @@ void DebugPanelHost::render_frame_timing_scheduler_panel() {
         return;
     }
 
-    ImGui::SetNextWindowPos(ImVec2(756.0f, 32.0f), kInitialWindowLayoutCondition);
-    ImGui::SetNextWindowSize(ImVec2(360.0f, 220.0f), kInitialWindowLayoutCondition);
+    set_initial_window_layout(ImVec2(756.0f, 32.0f), ImVec2(360.0f, 220.0f));
 
     if (!ImGui::Begin("Frame Timing & Scheduler", &panel_visibility_.frame_timing_scheduler)) {
         ImGui::End();

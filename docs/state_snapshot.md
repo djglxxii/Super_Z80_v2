@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M57
+M58
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,13 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M58 complete.
+- Frontend stabilization now clamps first-use ImGui window placement and sizing against the active viewport work area so the default debug panels stay visible inside the smaller `640x480` SDL shell windows instead of spawning off-screen.
+- Frontend layout persistence now uses Dear ImGui's built-in ini load/save flow through an SDL preference-directory-backed `super_z80_frontend_layout.ini` path, with fallback to the previous local filename when a preference path is unavailable.
+- Frontend startup and shutdown continue to tolerate missing or malformed layout files through the existing Dear ImGui ini parser behavior, and explicit save-on-shutdown now preserves panel visibility and arrangement without introducing a custom persistence system.
+- Headless ROM execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xC5117D35`.
+- CI-safe SDL smoke checks still succeed under dummy/software drivers for both `--sdl-input --rom rom/showcase/build/showcase.bin` and `--sdl-audio --rom rom/showcase/build/showcase.bin`, confirming the stabilized frontend startup path without changing headless execution behavior.
+- Automated verification confirms build, tests, headless execution, and frontend startup behavior; manual visual confirmation of final panel placement, menu toggling, and restored layouts in a real SDL session is still recommended.
 - M57 complete.
 - The frontend now presents an integrated ImGui debug overlay with a top-level `Debug` menu that controls visibility for `Emulator Control`, `CPU Debug`, `Memory Viewer`, `VRAM Viewer`, `Sprite Debug`, `DMA Debug`, `Audio Debug`, `Input Visualization`, and `Frame Timing & Scheduler`.
 - Added frontend-owned explicit panel visibility state plus a new `Debug Overview` workspace window so existing developer tools can be shown selectively without changing emulator execution, scheduler timing, or subsystem ownership.
