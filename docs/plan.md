@@ -498,7 +498,29 @@ Improve usability on high-resolution displays and allow developers to comfortabl
 
 ---
 
-# M60 – ROM Browser Integration
+# M60 – Display Pipeline Bring-Up
+
+Features:
+
+* invoke VDP frame rendering in the runtime emulation path at the frame boundary
+* create frontend framebuffer presentation path using SDL texture upload/rendering
+* display rendered emulator framebuffer behind ImGui debug overlays
+* preserve existing frontend scale presets when presenting the framebuffer
+
+Verification:
+
+* ROM loads and produces visible framebuffer output in SDL runtime
+* ImGui overlays still render on top of emulator output
+* headless execution remains unaffected
+* display path does not alter emulator timing ownership
+
+Purpose:
+
+Restore visible game rendering in the frontend and complete the missing runtime display pipeline between VDP framebuffer generation and SDL presentation.
+
+---
+
+# M61 – ROM Browser Integration
 
 Features:
 
