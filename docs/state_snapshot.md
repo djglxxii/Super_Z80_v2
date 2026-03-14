@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M62
+M63
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,6 +36,13 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
+- M63 complete.
+- The visible SDL interactive runtime now opens the SDL audio sink and pumps `EmulatorCore` mixed samples through the existing `SdlAudioOutput` path, so `--sdl-input` no longer runs silently when a ROM generates PSG or YM2151 audio.
+- SDL CLI dispatch now routes `--sdl-input`, `--sdl-audio`, and `--sdl-input --sdl-audio` through the same audio-capable interactive runtime path, preserving the legacy audio-only entry flag while removing the previous flag-order ambiguity in `main()`.
+- Interactive runtime startup, ROM load/reset, and in-memory snapshot restore now clear and repopulate the SDL audio queue from the shell layer, while failed SDL audio-device initialization degrades to silent execution instead of aborting the visible runtime.
+- Deterministic headless execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0x3C5D42C4 ram_crc32=0xB957D880 audio_crc32=0x8F537EF9`.
+- Extended headless verification also succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 48`, producing `HEADLESS_ROM_RESULT rom_crc32=0x3C5D42C4 ram_crc32=0x1834E477 audio_crc32=0x15D6E68A`.
+- CI-safe SDL smoke checks now succeed under dummy/software drivers for `--sdl-input`, `--sdl-audio`, and `--sdl-input --sdl-audio`, confirming the unified interactive runtime stays stable until expected `timeout` termination even when dummy audio/video drivers are used.
 - M60 complete.
 - The runtime display pipeline now renders a complete VDP framebuffer at scheduler frame wrap and exposes a read-only `EmulatorCore` framebuffer snapshot for frontend presentation without moving display ownership into the core.
 - The SDL frontend now owns an emulator framebuffer texture path that uploads RGBA pixels, preserves the existing integer display scale presets with centered aspect-correct presentation, and draws emulator video before the ImGui debug overlay.

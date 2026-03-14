@@ -44,8 +44,8 @@ void print_help() {
     std::cout << "Usage: super_z80 [--help] [--version] [--sdl-input] [--sdl-audio] [--rom <path>] [--headless] [--frames <count>]" << std::endl;
     std::cout << "  --help       Show this help message" << std::endl;
     std::cout << "  --version    Show version information" << std::endl;
-    std::cout << "  --sdl-input  Run the SDL controller input shell" << std::endl;
-    std::cout << "  --sdl-audio  Run the SDL audio playback shell" << std::endl;
+    std::cout << "  --sdl-input  Run the SDL interactive runtime with window, input, and audio" << std::endl;
+    std::cout << "  --sdl-audio  Run the SDL interactive runtime with audio enabled" << std::endl;
     std::cout << "  --rom        Load an external ROM from disk" << std::endl;
     std::cout << "  --headless   Run the loaded ROM without SDL interaction" << std::endl;
     std::cout << "  --frames     Number of frames to execute in headless mode (default: 1)" << std::endl;
@@ -597,193 +597,17 @@ SDL_Renderer* create_window_renderer(SDL_Window* window) {
     return SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
 }
 
+int run_sdl_input_shell(EmulatorCore& core,
+                        const std::string& startup_rom_path,
+                        bool demo_audio_when_rom_missing);
+
 int run_sdl_audio_shell(EmulatorCore& core, const std::string& startup_rom_path) {
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        std::cerr << "SDL initialization failed: " << SDL_GetError() << std::endl;
-        return 1;
-    }
-
-    const unsigned int initial_display_scale = superz80::frontend::load_persisted_display_scale();
-    const superz80::frontend::DisplayWindowSize initial_window_size =
-        superz80::frontend::window_size_for_display_scale(initial_display_scale);
-    SDL_Window* window = SDL_CreateWindow(
-        "Super_Z80_v2 Audio Shell",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        initial_window_size.width,
-        initial_window_size.height,
-        SDL_WINDOW_SHOWN);
-    if (window == nullptr) {
-        std::cerr << "SDL window creation failed: " << SDL_GetError() << std::endl;
-        SDL_Quit();
-        return 1;
-    }
-
-    SDL_Renderer* renderer = create_window_renderer(window);
-    if (renderer == nullptr) {
-        std::cerr << "SDL renderer creation failed: " << SDL_GetError() << std::endl;
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
-    }
-
-    superz80::frontend::Frontend frontend;
-    if (!frontend.initialize({"sdl-audio-shell", initial_display_scale, window, renderer})) {
-        std::cerr << "Frontend initialization failed for SDL audio shell." << std::endl;
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
-    }
-
-    superz80::SdlAudioOutput audio_output;
-    if (!audio_output.initialize()) {
-        std::cerr << "SDL audio device open failed: " << SDL_GetError() << std::endl;
-        frontend.shutdown();
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
-    }
-
-    RuntimeLoopState loop_state = {};
-    std::optional<EmulatorCore::Snapshot> runtime_snapshot;
-    const auto reset_runtime = [&core, &audio_output, &loop_state, &runtime_snapshot]() {
-        audio_output.clear();
-        runtime_snapshot.reset();
-        if (!loop_state.current_rom_path.empty()) {
-            const RomLoadResult result = load_runtime_rom(core, loop_state.current_rom_path);
-            loop_state.rom_load_status_ok = result.ok;
-            loop_state.rom_load_status_message = result.message;
-            if (!result.ok) {
-                std::cerr << result.message << std::endl;
-                return;
-            }
-            std::cout << result.message << std::endl;
-        } else {
-            core.initialize();
-            program_demo_tone(core);
-            loop_state.rom_load_status_ok = true;
-            loop_state.rom_load_status_message = "Reset runtime to demo audio startup.";
-        }
-        loop_state.snapshot_available = false;
-        loop_state.snapshot_status_ok = true;
-        loop_state.snapshot_status_message = "Snapshot cleared after reset.";
-        pump_audio_output(core, audio_output);
-    };
-    const auto load_rom_into_runtime = [&core, &audio_output, &loop_state, &runtime_snapshot](const std::string& rom_path) {
-        audio_output.clear();
-        runtime_snapshot.reset();
-        const RomLoadResult result = load_runtime_rom(core, rom_path);
-        loop_state.rom_load_status_ok = result.ok;
-        loop_state.rom_load_status_message = result.message;
-        if (!result.ok) {
-            std::cerr << result.message << std::endl;
-            return;
-        }
-
-        loop_state.current_rom_path = rom_path;
-        loop_state.emulation_running = true;
-        loop_state.snapshot_available = false;
-        loop_state.snapshot_status_ok = true;
-        loop_state.snapshot_status_message = "Snapshot cleared after ROM load.";
-        std::cout << result.message << std::endl;
-        pump_audio_output(core, audio_output);
-    };
-    const auto save_snapshot = [&core, &audio_output, &loop_state, &runtime_snapshot]() {
-        runtime_snapshot = core.capture_snapshot();
-        audio_output.clear();
-        pump_audio_output(core, audio_output);
-        loop_state.snapshot_available = true;
-        loop_state.snapshot_status_ok = true;
-        loop_state.snapshot_status_message = "Saved in-memory snapshot.";
-    };
-    const auto restore_snapshot = [&core, &audio_output, &loop_state, &runtime_snapshot]() {
-        if (!runtime_snapshot.has_value()) {
-            loop_state.snapshot_available = false;
-            loop_state.snapshot_status_ok = false;
-            loop_state.snapshot_status_message = "Restore failed: no snapshot saved.";
-            return;
-        }
-
-        core.restore_snapshot(*runtime_snapshot);
-        audio_output.clear();
-        pump_audio_output(core, audio_output);
-        loop_state.snapshot_available = true;
-        loop_state.snapshot_status_ok = true;
-        loop_state.snapshot_status_message = "Restored in-memory snapshot.";
-    };
-
-    if (!startup_rom_path.empty()) {
-        load_rom_into_runtime(startup_rom_path);
-        if (!loop_state.rom_load_status_ok) {
-            audio_output.shutdown();
-            frontend.shutdown();
-            SDL_DestroyRenderer(renderer);
-            SDL_DestroyWindow(window);
-            SDL_Quit();
-            return 1;
-        }
-    } else {
-        program_demo_tone(core);
-        pump_audio_output(core, audio_output);
-        loop_state.rom_load_status_ok = true;
-        loop_state.rom_load_status_message = "Demo audio startup active. Use File -> Load ROM to run a cartridge.";
-    }
-
-    audio_output.start();
-
-    std::cout << "SDL audio shell active. Tone A demo is routed through SDL audio. "
-                 "Close the window or press Escape to quit."
-              << std::endl;
-
-    bool running = true;
-    while (running) {
-        populate_frontend_runtime_state(frontend, loop_state, core);
-        frontend.begin_frame();
-
-        SDL_Event event;
-        while (SDL_PollEvent(&event) == 1) {
-            frontend.handle_event(event);
-
-            if (event.type == SDL_QUIT) {
-                running = false;
-            } else if (event.type == SDL_KEYDOWN && event.key.repeat == 0 &&
-                       event.key.keysym.sym == SDLK_ESCAPE) {
-                running = false;
-            }
-        }
-        frontend.compose_ui();
-
-        apply_runtime_control_commands(
-            frontend,
-            loop_state,
-            core,
-            reset_runtime,
-            load_rom_into_runtime,
-            save_snapshot,
-            restore_snapshot);
-
-        if (loop_state.emulation_running) {
-            step_one_emulator_frame(core);
-        }
-
-        pump_audio_output(core, audio_output);
-        render_frontend_frame(frontend, renderer, core);
-        frontend.end_frame();
-
-        SDL_Delay(1);
-    }
-
-    audio_output.shutdown();
-    frontend.shutdown();
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-    return 0;
+    return run_sdl_input_shell(core, startup_rom_path, true);
 }
 
-int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path) {
+int run_sdl_input_shell(EmulatorCore& core,
+                        const std::string& startup_rom_path,
+                        bool demo_audio_when_rom_missing = false) {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) != 0) {
         std::cerr << "SDL initialization failed: " << SDL_GetError() << std::endl;
         return 1;
@@ -793,7 +617,7 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
     const superz80::frontend::DisplayWindowSize initial_window_size =
         superz80::frontend::window_size_for_display_scale(initial_display_scale);
     SDL_Window* window = SDL_CreateWindow(
-        "Super_Z80_v2 Input Shell",
+        "Super_Z80_v2 Interactive Runtime",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         initial_window_size.width,
@@ -814,8 +638,8 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
     }
 
     superz80::frontend::Frontend frontend;
-    if (!frontend.initialize({"sdl-input-shell", initial_display_scale, window, renderer})) {
-        std::cerr << "Frontend initialization failed for SDL input shell." << std::endl;
+    if (!frontend.initialize({"sdl-interactive-runtime", initial_display_scale, window, renderer})) {
+        std::cerr << "Frontend initialization failed for SDL interactive runtime." << std::endl;
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
@@ -832,12 +656,32 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
         }
     }
 
-    std::cout << "SDL input shell active. Arrow keys, Z, X, Enter mapped to PAD1/PAD1_SYS. Close the window or press Escape to quit." << std::endl;
+    superz80::SdlAudioOutput audio_output;
+    const bool audio_output_ready = audio_output.initialize();
+    if (!audio_output_ready) {
+        std::cerr << "SDL audio device open failed; continuing silently: " << SDL_GetError()
+                  << std::endl;
+    }
+
+    std::cout << "SDL interactive runtime active. Arrow keys, Z, X, Enter mapped to PAD1/PAD1_SYS. "
+                 "Audio playback is enabled when SDL audio initializes. Close the window or press Escape to quit."
+              << std::endl;
     print_controller_state(core.bus());
 
     RuntimeLoopState loop_state = {};
     std::optional<EmulatorCore::Snapshot> runtime_snapshot;
-    const auto reset_runtime = [&core, &loop_state, &runtime_snapshot]() {
+    const auto pump_runtime_audio = [&core, &audio_output, audio_output_ready]() {
+        if (audio_output_ready) {
+            pump_audio_output(core, audio_output);
+        }
+    };
+    const auto reset_runtime = [&core,
+                                &audio_output,
+                                &loop_state,
+                                &runtime_snapshot,
+                                demo_audio_when_rom_missing,
+                                &pump_runtime_audio]() {
+        audio_output.clear();
         runtime_snapshot.reset();
         if (!loop_state.current_rom_path.empty()) {
             const RomLoadResult result = load_runtime_rom(core, loop_state.current_rom_path);
@@ -848,6 +692,11 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
                 return;
             }
             std::cout << result.message << std::endl;
+        } else if (demo_audio_when_rom_missing) {
+            core.initialize();
+            program_demo_tone(core);
+            loop_state.rom_load_status_ok = true;
+            loop_state.rom_load_status_message = "Reset runtime to demo audio startup.";
         } else {
             core.initialize();
             loop_state.rom_load_status_ok = true;
@@ -856,8 +705,14 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
         loop_state.snapshot_available = false;
         loop_state.snapshot_status_ok = true;
         loop_state.snapshot_status_message = "Snapshot cleared after reset.";
+        pump_runtime_audio();
     };
-    const auto load_rom_into_runtime = [&core, &loop_state, &runtime_snapshot](const std::string& rom_path) {
+    const auto load_rom_into_runtime = [&core,
+                                        &audio_output,
+                                        &loop_state,
+                                        &runtime_snapshot,
+                                        &pump_runtime_audio](const std::string& rom_path) {
+        audio_output.clear();
         runtime_snapshot.reset();
         const RomLoadResult result = load_runtime_rom(core, rom_path);
         loop_state.rom_load_status_ok = result.ok;
@@ -873,14 +728,17 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
         loop_state.snapshot_status_ok = true;
         loop_state.snapshot_status_message = "Snapshot cleared after ROM load.";
         std::cout << result.message << std::endl;
+        pump_runtime_audio();
     };
-    const auto save_snapshot = [&core, &loop_state, &runtime_snapshot]() {
+    const auto save_snapshot = [&core, &audio_output, &loop_state, &runtime_snapshot, &pump_runtime_audio]() {
         runtime_snapshot = core.capture_snapshot();
+        audio_output.clear();
+        pump_runtime_audio();
         loop_state.snapshot_available = true;
         loop_state.snapshot_status_ok = true;
         loop_state.snapshot_status_message = "Saved in-memory snapshot.";
     };
-    const auto restore_snapshot = [&core, &loop_state, &runtime_snapshot]() {
+    const auto restore_snapshot = [&core, &audio_output, &loop_state, &runtime_snapshot, &pump_runtime_audio]() {
         if (!runtime_snapshot.has_value()) {
             loop_state.snapshot_available = false;
             loop_state.snapshot_status_ok = false;
@@ -889,6 +747,8 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
         }
 
         core.restore_snapshot(*runtime_snapshot);
+        audio_output.clear();
+        pump_runtime_audio();
         loop_state.snapshot_available = true;
         loop_state.snapshot_status_ok = true;
         loop_state.snapshot_status_message = "Restored in-memory snapshot.";
@@ -906,9 +766,18 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
             SDL_Quit();
             return 1;
         }
+    } else if (demo_audio_when_rom_missing) {
+        program_demo_tone(core);
+        pump_runtime_audio();
+        loop_state.rom_load_status_ok = true;
+        loop_state.rom_load_status_message = "Demo audio startup active. Use File -> Load ROM to run a cartridge.";
     } else {
         loop_state.rom_load_status_ok = true;
         loop_state.rom_load_status_message = "No ROM loaded. Use File -> Load ROM to begin.";
+    }
+
+    if (audio_output_ready) {
+        audio_output.start();
     }
 
     bool running = true;
@@ -972,15 +841,17 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
             step_one_emulator_frame(core);
         }
 
+        pump_runtime_audio();
         render_frontend_frame(frontend, renderer, core);
         frontend.end_frame();
 
-        SDL_Delay(16);
+        SDL_Delay(audio_output_ready ? 1 : 16);
     }
 
     if (controller != nullptr) {
         SDL_GameControllerClose(controller);
     }
+    audio_output.shutdown();
     frontend.shutdown();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
@@ -1022,20 +893,14 @@ int main(int argc, char* argv[]) {
         return run_headless_rom(core, options.rom_path, options.frames);
     }
 
-    if (options.use_sdl_input) {
+    if (options.use_sdl_input || options.use_sdl_audio) {
 #if defined(SUPER_Z80_HAS_SDL)
-        return run_sdl_input_shell(core, options.rom_path);
+        return run_sdl_input_shell(core,
+                                   options.rom_path,
+                                   options.use_sdl_audio && !options.use_sdl_input);
 #else
-        std::cerr << "SDL input shell unavailable: SDL2 was not found at build time." << std::endl;
-        return 1;
-#endif
-    }
-
-    if (options.use_sdl_audio) {
-#if defined(SUPER_Z80_HAS_SDL)
-        return run_sdl_audio_shell(core, options.rom_path);
-#else
-        std::cerr << "SDL audio shell unavailable: SDL2 was not found at build time." << std::endl;
+        std::cerr << "SDL interactive runtime unavailable: SDL2 was not found at build time."
+                  << std::endl;
         return 1;
 #endif
     }
