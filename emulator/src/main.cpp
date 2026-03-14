@@ -591,12 +591,15 @@ int run_sdl_audio_shell(EmulatorCore& core, const std::string& startup_rom_path)
         return 1;
     }
 
+    const unsigned int initial_display_scale = superz80::frontend::load_persisted_display_scale();
+    const superz80::frontend::DisplayWindowSize initial_window_size =
+        superz80::frontend::window_size_for_display_scale(initial_display_scale);
     SDL_Window* window = SDL_CreateWindow(
         "Super_Z80_v2 Audio Shell",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
-        640,
-        240,
+        initial_window_size.width,
+        initial_window_size.height,
         SDL_WINDOW_SHOWN);
     if (window == nullptr) {
         std::cerr << "SDL window creation failed: " << SDL_GetError() << std::endl;
@@ -613,7 +616,7 @@ int run_sdl_audio_shell(EmulatorCore& core, const std::string& startup_rom_path)
     }
 
     superz80::frontend::Frontend frontend;
-    if (!frontend.initialize({"sdl-audio-shell", window, renderer})) {
+    if (!frontend.initialize({"sdl-audio-shell", initial_display_scale, window, renderer})) {
         std::cerr << "Frontend initialization failed for SDL audio shell." << std::endl;
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
@@ -777,12 +780,15 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
         return 1;
     }
 
+    const unsigned int initial_display_scale = superz80::frontend::load_persisted_display_scale();
+    const superz80::frontend::DisplayWindowSize initial_window_size =
+        superz80::frontend::window_size_for_display_scale(initial_display_scale);
     SDL_Window* window = SDL_CreateWindow(
         "Super_Z80_v2 Input Shell",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
-        640,
-        480,
+        initial_window_size.width,
+        initial_window_size.height,
         SDL_WINDOW_SHOWN);
     if (window == nullptr) {
         std::cerr << "SDL window creation failed: " << SDL_GetError() << std::endl;
@@ -799,7 +805,7 @@ int run_sdl_input_shell(EmulatorCore& core, const std::string& startup_rom_path)
     }
 
     superz80::frontend::Frontend frontend;
-    if (!frontend.initialize({"sdl-input-shell", window, renderer})) {
+    if (!frontend.initialize({"sdl-input-shell", initial_display_scale, window, renderer})) {
         std::cerr << "Frontend initialization failed for SDL input shell." << std::endl;
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);

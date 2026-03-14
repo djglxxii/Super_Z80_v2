@@ -81,6 +81,7 @@ void DebugPanelHost::initialize() {
     memory_region_ = MemoryRegion::Rom;
     memory_view_start_address_ = 0x0000U;
     vram_view_start_address_ = 0x0000U;
+    display_scale_ = 2U;
     rom_path_input_.fill('\0');
     rom_path_input_cache_.clear();
 }
@@ -94,11 +95,16 @@ void DebugPanelHost::shutdown() {
     memory_region_ = MemoryRegion::Rom;
     memory_view_start_address_ = 0x0000U;
     vram_view_start_address_ = 0x0000U;
+    display_scale_ = 2U;
     rom_path_input_.fill('\0');
     rom_path_input_cache_.clear();
 }
 
 void DebugPanelHost::begin_frame() {
+}
+
+void DebugPanelHost::set_display_scale(unsigned int scale) {
+    display_scale_ = scale;
 }
 
 void DebugPanelHost::set_runtime_control_state(const RuntimeControlState& state) {
@@ -213,6 +219,19 @@ void DebugPanelHost::render_menu_bar() {
         ImGui::EndMenu();
     }
 
+    if (ImGui::BeginMenu("View")) {
+        if (ImGui::MenuItem("Display Scale 2x", nullptr, display_scale_ == 2U)) {
+            request_display_scale(2U);
+        }
+        if (ImGui::MenuItem("Display Scale 4x", nullptr, display_scale_ == 4U)) {
+            request_display_scale(4U);
+        }
+        if (ImGui::MenuItem("Display Scale 6x", nullptr, display_scale_ == 6U)) {
+            request_display_scale(6U);
+        }
+        ImGui::EndMenu();
+    }
+
     ImGui::EndMainMenuBar();
 }
 
@@ -231,6 +250,7 @@ void DebugPanelHost::render_debug_overview_panel(const std::string& runtime_name
     ImGui::Text("Runtime: %s", runtime_name.c_str());
     ImGui::Text("Execution: %s", runtime_control_state_.running ? "Running" : "Paused");
     ImGui::Text("Frame: %u", runtime_control_state_.frame_counter);
+    ImGui::Text("Display Scale: %ux", display_scale_);
     ImGui::Text("ROM: %s",
                 runtime_control_state_.current_rom_path.empty()
                     ? "<none>"
@@ -308,6 +328,7 @@ void DebugPanelHost::render_emulator_control_panel(const std::string& runtime_na
     ImGui::Separator();
     ImGui::Text("Execution State: %s", runtime_control_state_.running ? "Running" : "Paused");
     ImGui::Text("Frame Counter: %u", runtime_control_state_.frame_counter);
+    ImGui::Text("Display Scale: %ux", display_scale_);
     ImGui::Text("Snapshot: %s", runtime_control_state_.snapshot_available ? "Available" : "Empty");
     ImGui::Text("ROM Path: %s",
                 runtime_control_state_.current_rom_path.empty()
@@ -332,6 +353,11 @@ void DebugPanelHost::render_emulator_control_panel(const std::string& runtime_na
     ImGui::Text("Runtime: %s", runtime_name.c_str());
 
     ImGui::End();
+}
+
+void DebugPanelHost::request_display_scale(unsigned int scale) {
+    pending_runtime_control_commands_.display_scale_change_requested = true;
+    pending_runtime_control_commands_.requested_display_scale = scale;
 }
 
 void DebugPanelHost::render_cpu_debug_panel() {

@@ -175,6 +175,8 @@ struct RuntimeControlCommands {
     bool restore_snapshot_requested = false;
     bool load_rom_requested = false;
     bool reload_rom_requested = false;
+    bool display_scale_change_requested = false;
+    unsigned int requested_display_scale = 0U;
     std::string rom_path_to_load;
 };
 
@@ -183,6 +185,7 @@ public:
     void initialize();
     void shutdown();
     void begin_frame();
+    void set_display_scale(unsigned int scale);
     void set_runtime_control_state(const RuntimeControlState& state);
     RuntimeControlCommands consume_runtime_control_commands();
     void render(const std::string& runtime_name);
@@ -210,6 +213,7 @@ private:
     void render_menu_bar();
     void render_debug_overview_panel(const std::string& runtime_name);
     void render_emulator_control_panel(const std::string& runtime_name);
+    void request_display_scale(unsigned int scale);
     void render_cpu_debug_panel();
     void sync_rom_path_input();
     void render_memory_viewer();
@@ -230,6 +234,7 @@ private:
     MemoryRegion memory_region_ = MemoryRegion::Rom;
     uint16_t memory_view_start_address_ = 0x0000U;
     uint32_t vram_view_start_address_ = 0x0000U;
+    unsigned int display_scale_ = 2U;
     std::array<char, 512> rom_path_input_ = {};
     std::string rom_path_input_cache_;
 };

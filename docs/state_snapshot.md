@@ -1,7 +1,7 @@
 # Super_Z80_v2 State Snapshot
 
 ## Current Milestone
-M58
+M59
 
 ## Audio Status
 Current validated audio implementation:
@@ -36,8 +36,14 @@ M29g is host integration only and does not change emulator hardware semantics.
 PCM remains excluded from the platform design.
 
 ## Recent Changes
-- Planning update recorded: the canonical frontend plan now extends beyond M58 with `M59 - Display Scaling & Window Sizing` and `M60 - ROM Browser Integration`.
-- The next official frontend milestone is now `M59 - Display Scaling & Window Sizing`.
+- M59 complete.
+- The SDL frontend now exposes a `View` menu with integer display scale presets `2x`, `4x`, and `6x`, and changing the selected scale resizes the active SDL window immediately without touching emulator-core timing or headless execution.
+- SDL frontend startup now derives its initial window size from the native `256x192` framebuffer dimensions multiplied by the persisted or default scale, so both the input and audio shells open consistently at `512x384`, `1024x768`, or `1536x1152`.
+- Frontend display scale persistence now uses a narrow SDL preference-directory-backed `super_z80_frontend_settings.cfg` file storing a single `display_scale=<n>` value, with fallback to the previous working directory when a preference path is unavailable.
+- Headless ROM execution remains unchanged and still succeeds with `./build/super_z80 --rom rom/showcase/build/showcase.bin --headless --frames 1`, producing `HEADLESS_ROM_RESULT rom_crc32=0xD7F53636 ram_crc32=0x9A494230 audio_crc32=0xC5117D35`.
+- CI-safe SDL smoke checks still succeed under dummy/software drivers for both `--sdl-input --rom rom/showcase/build/showcase.bin` and `--sdl-audio --rom rom/showcase/build/showcase.bin`, and an additional temporary-home startup check succeeds with a seeded persisted `display_scale=4` configuration.
+- Automated verification confirms build, tests, headless execution, and persisted-scale SDL startup behavior; manual visual confirmation of actual on-screen window dimensions and menu-driven scale changes in a real desktop session is still recommended.
+- The next official frontend milestone is now `M60 - ROM Browser Integration`.
 - M58 complete.
 - Frontend stabilization now clamps first-use ImGui window placement and sizing against the active viewport work area so the default debug panels stay visible inside the smaller `640x480` SDL shell windows instead of spawning off-screen.
 - Frontend layout persistence now uses Dear ImGui's built-in ini load/save flow through an SDL preference-directory-backed `super_z80_frontend_layout.ini` path, with fallback to the previous local filename when a preference path is unavailable.
